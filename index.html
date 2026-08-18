@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockFlow BH · Painel Logístico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#EAEEF5;
+  --surface:#FFFFFF;
+  --surface-soft:#F4F6FB;
+  --ink:#10182B;
+  --ink-soft:#5B6472;
+  --ink-faint:#8891A0;
+  --line:#DEE3ED;
+  --line-soft:#EAEEF5;
+  --brand:#2952CC;
+  --brand-dark:#101B36;
+  --brand-soft:#E7EDFC;
+  --cd13:#0E7C86;
+  --cd13-soft:#DFF1F1;
+  --quarentena:#B7791F;
+  --quarentena-soft:#FBF0DC;
+  --reembalar:#6D4AAE;
+  --reembalar-soft:#EEE7F9;
+  --descarte:#B23A2F;
+  --descarte-soft:#FAE4E1;
+  --ok:#1E8E5A;
+  --ok-soft:#E1F3EA;
+  --radius:12px;
+  --radius-sm:8px;
+  --shadow-card:0 1px 2px rgba(16,24,43,.04), 0 1px 0 rgba(16,24,43,.03);
+  --shadow-pop:0 12px 32px rgba(16,24,43,.14);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.disp{font-family:'Space Grotesk',system-ui,sans-serif;}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+button{font-family:inherit;}
+::selection{background:var(--brand-soft);color:var(--brand-dark);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+}
+
+/* ---------- Topbar ---------- */
+.topbar{
+  background:var(--brand-dark);
+  color:#fff;
+  padding:14px 28px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  position:sticky;
+  top:0;
+  z-index:40;
+  box-shadow:0 2px 12px rgba(0,0,0,.18);
+}
+.brandmark{
+  width:38px;height:38px;flex:none;
+  border-radius:9px;
+  background:linear-gradient(155deg,#28407A,#101B36);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.12);
+}
+.brand-copy{flex:1;min-width:0;}
+.brand-copy h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.1px;color:#fff;}
+.brand-copy p{font-size:12px;margin:1px 0 0;color:#AEB9D6;}
+.topbar-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.pill{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  color:#DCE3F5;
+  font-size:12px;
+  padding:6px 12px;
+  border-radius:999px;
+  white-space:nowrap;
+  font-weight:500;
+}
+.btn{
+  border:1px solid transparent;
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  transition:transform .12s ease, background .15s ease, border-color .15s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:translateY(1px);}
+.btn-primary{background:var(--brand);color:#fff;}
+.btn-primary:hover{background:#3A62E0;}
+.btn-ghost{background:rgba(255,255,255,.06);color:#EAEFFC;border-color:rgba(255,255,255,.18);}
+.btn-ghost:hover{background:rgba(255,255,255,.14);}
+.btn-line{background:var(--surface);color:var(--ink);border-color:var(--line);}
+.btn-line:hover{border-color:var(--brand);color:var(--brand);}
+.btn svg{width:15px;height:15px;flex:none;}
+#file-input{display:none;}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1360px;margin:0 auto;padding:22px 28px 60px;}
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--brand-dark);color:#fff;padding:12px 20px;border-radius:10px;
+  font-size:13px;font-weight:500;box-shadow:var(--shadow-pop);
+  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  z-index:100;display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast svg{width:16px;height:16px;color:#7FE0A8;flex:none;}
+
+/* ---------- Filter bar ---------- */
+.filterbar{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px 16px;
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  margin-bottom:16px;
+  box-shadow:var(--shadow-card);
+}
+.field{display:flex;flex-direction:column;gap:5px;min-width:150px;}
+.field label{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+.field input, .field select{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:13px;
+  color:var(--ink);
+  background:var(--surface-soft);
+  min-width:0;
+}
+.field input:focus, .field select:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand);}
+.field.grow{flex:1;min-width:220px;}
+.icon-btn{
+  border:1px solid var(--line);
+  background:var(--surface-soft);
+  border-radius:8px;
+  width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--ink-soft);flex:none;
+}
+.icon-btn:hover{color:var(--brand);border-color:var(--brand);}
+.icon-btn svg{width:16px;height:16px;}
+
+/* ---------- KPI strip ---------- */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:12px;
+  margin-bottom:20px;
+}
+@media (max-width:1180px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:15px 16px;
+  box-shadow:var(--shadow-card);
+  opacity:0;
+  animation:fadeUp .5s ease forwards;
+}
+.kpi-card .kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.kpi-label{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+.kpi-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;}
+.kpi-ico svg{width:15px;height:15px;}
+.kpi-value{font-family:'Space Grotesk';font-size:26px;font-weight:700;line-height:1;letter-spacing:-.01em;}
+.kpi-sub{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---------- Tabs ---------- */
+.tabbar{
+  display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:5px;margin-bottom:18px;overflow-x:auto;
+  box-shadow:var(--shadow-card);
+}
+.tabbtn{
+  border:none;background:transparent;padding:9px 15px;border-radius:8px;
+  font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;
+  transition:background .15s ease, color .15s ease;
+}
+.tabbtn .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ink-faint);}
+.tabbtn .count{
+  font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);
+  padding:1px 7px;border-radius:999px;
+}
+.tabbtn:hover{background:var(--surface-soft);color:var(--ink);}
+.tabbtn.active{background:var(--brand-dark);color:#fff;}
+.tabbtn.active .count{background:rgba(255,255,255,.16);color:#fff;}
+
+/* ---------- Panels ---------- */
+.panel{display:none;}
+.panel.active{display:block;animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
+@media (max-width:980px){.grid-2{grid-template-columns:1fr;}}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow-card);
+}
+.card + .card{margin-top:16px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;flex-wrap:wrap;}
+.card-head h3{margin:0;font-size:14.5px;font-weight:600;}
+.card-sub{font-size:12px;color:var(--ink-soft);margin:2px 0 14px;}
+.tag{
+  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  padding:3px 9px;border-radius:999px;
+}
+
+/* deposit accent utility */
+.acc-cd13{color:var(--cd13);} .bg-cd13{background:var(--cd13);} .soft-cd13{background:var(--cd13-soft);color:#0B5A62;}
+.acc-quarentena{color:var(--quarentena);} .bg-quarentena{background:var(--quarentena);} .soft-quarentena{background:var(--quarentena-soft);color:#8A5B14;}
+.acc-reembalar{color:var(--reembalar);} .bg-reembalar{background:var(--reembalar);} .soft-reembalar{background:var(--reembalar-soft);color:#553681;}
+.acc-descarte{color:var(--descarte);} .bg-descarte{background:var(--descarte);} .soft-descarte{background:var(--descarte-soft);color:#8A2A21;}
+.acc-ok{color:var(--ok);} .soft-ok{background:var(--ok-soft);color:#166B44;}
+
+.dep-hero{
+  border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;color:#fff;
+  display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.dep-hero:before{content:"";position:absolute;inset:0;opacity:.14;background-image:radial-gradient(circle at 88% -10%, #fff 0%, transparent 60%);}
+.dep-hero h2{margin:0 0 4px;font-size:20px;color:#fff;}
+.dep-hero p{margin:0;font-size:12.5px;color:rgba(255,255,255,.82);max-width:480px;}
+.dep-hero-stats{display:flex;gap:26px;flex-wrap:wrap;}
+.dep-hero-stat b{display:block;font-family:'Space Grotesk';font-size:22px;line-height:1;}
+.dep-hero-stat span{font-size:11px;color:rgba(255,255,255,.78);text-transform:uppercase;letter-spacing:.04em;}
+
+.mini-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+@media (max-width:640px){.mini-kpis{grid-template-columns:1fr 1fr;}}
+.mini-kpi{background:var(--surface-soft);border:1px solid var(--line-soft);border-radius:10px;padding:11px 13px;}
+.mini-kpi .l{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+.mini-kpi .v{font-family:'Space Grotesk';font-size:19px;font-weight:700;margin-top:3px;}
+
+/* ---------- Table ---------- */
+.table-scroll{overflow:auto;border:1px solid var(--line-soft);border-radius:10px;max-height:520px;}
+table{width:100%;border-collapse:collapse;font-size:12.5px;}
+thead th{
+  position:sticky;top:0;background:var(--surface-soft);
+  text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;color:var(--ink-soft);
+  text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2;
+}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink);vertical-align:top;}
+tbody tr:hover{background:var(--surface-soft);}
+tbody tr.dim{opacity:.32;}
+.addr-chip{
+  font-family:'IBM Plex Mono';font-size:11.5px;font-weight:600;background:var(--surface-soft);
+  border:1px solid var(--line);padding:2px 7px;border-radius:6px;display:inline-block;
+}
+.desc-cell b{display:block;font-weight:600;}
+.desc-cell .meta{font-size:11px;color:var(--ink-soft);}
+.num{font-family:'IBM Plex Mono';font-variant-numeric:tabular-nums;text-align:right;}
+.empty-row td{text-align:center;color:var(--ink-faint);padding:34px;font-size:13px;}
+
+/* ---------- Charts (custom SVG) ---------- */
+.chart-wrap svg{width:100%;height:auto;display:block;overflow:visible;}
+.bar-label{font-size:11px;fill:var(--ink-soft);font-family:'Inter';}
+.bar-value{font-size:11px;fill:var(--ink);font-weight:600;font-family:'IBM Plex Mono';}
+.axis-label{font-size:10px;fill:var(--ink-faint);font-family:'Inter';}
+.gridline{stroke:var(--line-soft);stroke-width:1;}
+
+/* ---------- Rack map (signature element) ---------- */
+.rackmap-legend{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink-soft);margin-bottom:12px;flex-wrap:wrap;}
+.legend-scale{display:flex;height:10px;width:120px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+.legend-scale span{flex:1;}
+.rackmap{display:flex;flex-direction:column;gap:7px;padding:6px 2px 2px;}
+.rack-row{display:flex;align-items:center;gap:8px;}
+.rack-row-label{
+  width:30px;flex:none;font-family:'IBM Plex Mono';font-size:11px;font-weight:700;color:var(--ink-soft);text-align:center;
+}
+.rack-cells{display:grid;grid-template-columns:repeat(36,minmax(0,1fr));gap:3px;flex:1;}
+.cell{
+  aspect-ratio:1/1;border-radius:3px;cursor:default;position:relative;
+  border:1px solid transparent;
+  transition:transform .1s ease, box-shadow .1s ease;
+}
+.cell.active{cursor:pointer;}
+.cell.active:hover{transform:scale(1.28);box-shadow:0 4px 10px rgba(16,24,43,.28);z-index:5;border-color:rgba(0,0,0,.15);}
+.cell.empty{background:repeating-linear-gradient(45deg, var(--line-soft), var(--line-soft) 3px, var(--surface) 3px, var(--surface) 6px);}
+.cell.selected{outline:2px solid var(--brand-dark);outline-offset:1px;}
+.cell-tip{
+  position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
+  background:var(--brand-dark);color:#fff;padding:7px 10px;border-radius:8px;font-size:11px;
+  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:20;
+  box-shadow:var(--shadow-pop);line-height:1.5;
+}
+.cell-tip b{font-family:'IBM Plex Mono';}
+.cell.active:hover .cell-tip{opacity:1;}
+.cell-tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--brand-dark);}
+
+/* ---------- Cargas ---------- */
+.carga-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-card);}
+.carga-card + .carga-card{margin-top:14px;}
+.carga-top{padding:16px 18px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;cursor:pointer;}
+.carga-top:hover{background:var(--surface-soft);}
+.carga-id{display:flex;align-items:center;gap:12px;}
+.carga-id .num{width:38px;height:38px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:14px;flex:none;}
+.carga-id h4{margin:0;font-size:14px;}
+.carga-id .meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+.carga-stats{display:flex;gap:22px;flex-wrap:wrap;}
+.carga-stats div{text-align:right;}
+.carga-stats b{font-family:'Space Grotesk';font-size:16px;display:block;}
+.carga-stats span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+.carga-body{border-top:1px solid var(--line-soft);padding:16px 18px;display:none;}
+.carga-body.open{display:block;}
+.chev{transition:transform .2s ease;color:var(--ink-faint);flex:none;}
+.chev.open{transform:rotate(180deg);}
+.occ-ok{color:var(--ok);font-weight:600;}
+.occ-bad{color:var(--descarte);font-weight:600;}
+.occ-tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block;margin:1px 3px 1px 0;}
+
+.section-title{display:flex;align-items:center;gap:10px;margin:26px 0 14px;}
+.section-title h2{font-size:16px;margin:0;}
+.section-title .line{flex:1;height:1px;background:var(--line);}
+
+footer{text-align:center;color:var(--ink-faint);font-size:11.5px;padding:30px 0 10px;}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brandmark">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M3 8L12 3L21 8V16L12 21L3 16V8Z" stroke="#8FB3FF" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M3 8L12 13L21 8M12 13V21" stroke="#8FB3FF" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="brand-copy">
+    <h1>StockFlow BH · Painel Logístico</h1>
+    <p>Armazenagem, expedição e conferência de cargas — CD13, Quarentena, Reembalar e Avariar</p>
+  </div>
+  <div class="topbar-actions">
+    <span class="pill" id="pill-cargas">3 cargas registradas</span>
+    <span class="pill" id="pill-posicoes">127 posições de estoque</span>
+    <button class="btn btn-primary" id="btn-import">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 15V4M12 15l-4-4M12 15l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Importar Excel
+    </button>
+    <input type="file" id="file-input" accept=".xlsx,.xls">
+    <button class="btn btn-ghost" id="btn-export">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Exportar Excel
+    </button>
+    <button class="btn btn-ghost" id="btn-reset" title="Restaurar dados originais da planilha">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Dados originais
+    </button>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="filterbar">
+    <div class="field">
+      <label for="f-from">Período — de</label>
+      <input type="date" id="f-from">
+    </div>
+    <div class="field">
+      <label for="f-to">Período — até</label>
+      <input type="date" id="f-to">
+    </div>
+    <div class="field grow">
+      <label for="f-search">Buscar SKU, descrição ou endereço</label>
+      <input type="text" id="f-search" placeholder="Ex.: 3000001193, amaciante, A12...">
+    </div>
+    <div class="field">
+      <label for="f-categoria">Categoria</label>
+      <select id="f-categoria"><option value="">Todas as categorias</option></select>
+    </div>
+    <button class="icon-btn" id="btn-clear" title="Limpar filtros">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="tabbar" id="tabbar"></div>
+
+  <div id="panels"></div>
+
+  <footer>StockFlow BH · Painel gerado a partir de <span class="mono">Estoque_BH.xlsx</span> — importe uma nova planilha a qualquer momento para atualizar os dados.</footer>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script type="application/json" id="embedded-data">
+{"estoque":[{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21032,"validade":"2028-07-26","qtdCx":66,"endereco":"A01","deposito":"CD13"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19647,"validade":"2028-05-15","qtdCx":59,"endereco":"A02","deposito":"CD13"},{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21032,"validade":"2028-07-26","qtdCx":66,"endereco":"A03","deposito":"CD13"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19647,"validade":"2028-05-15","qtdCx":60,"endereco":"A04","deposito":"CD13"},{"sku":3000000723,"descricao":"DESINF GEO EUCALIPTO 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","lote":20324,"validade":"2028-06-15","qtdCx":110,"endereco":"A05","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3 L","marca":"GEO","lote":20459,"validade":"2028-06-24","qtdCx":90,"endereco":"A06","deposito":"CD13"},{"sku":3000000723,"descricao":"DESINF GEO EUCALIPTO 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","lote":20324,"validade":"2028-06-15","qtdCx":110,"endereco":"A07","deposito":"CD13"},{"sku":3000000923,"descricao":"MULT GEO NEUTRALIZA ODOR 0,5L CX12","categoria":"NEUTRALIZA ODOR","volume":"0,5L","marca":"GEO","lote":20221,"validade":"2027-06-10","qtdCx":80,"endereco":"A08","deposito":"CD13"},{"sku":3000001239,"descricao":"LAVA ROUPAS FLOM CLASSIC 1,8L CX06","categoria":"LAVA ROUPA LIQUIDO","volume":"1,8L","marca":"FLOM","lote":20338,"validade":"2028-06-15","qtdCx":60,"endereco":"A09","deposito":"CD13"},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20530,"validade":"2028-06-28","qtdCx":60,"endereco":"A10","deposito":"CD13"},{"sku":3000001239,"descricao":"LAVA ROUPAS FLOM CLASSIC 1,8L CX06","categoria":"LAVA ROUPA LIQUIDO","volume":"1,8L","marca":"FLOM","lote":20338,"validade":"2028-06-15","qtdCx":60,"endereco":"A11","deposito":"CD13"},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20530,"validade":"2028-06-28","qtdCx":60,"endereco":"A12","deposito":"CD13"},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":17165,"validade":"2028-02-18","qtdCx":66,"endereco":"A13","deposito":"CD13"},{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20458,"validade":"2028-06-25","qtdCx":60,"endereco":"A14","deposito":"CD13"},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":17165,"validade":"2028-02-18","qtdCx":66,"endereco":"A15","deposito":"CD13"},{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20458,"validade":"2028-06-25","qtdCx":60,"endereco":"A16","deposito":"CD13"},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":20999,"validade":"2028-07-24","qtdCx":72,"endereco":"A17","deposito":"CD13"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20593,"validade":null,"qtdCx":60,"endereco":"A18","deposito":"CD13"},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":20999,"validade":"2028-07-24","qtdCx":72,"endereco":"A19","deposito":"CD13"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":19890,"validade":null,"qtdCx":60,"endereco":"A20","deposito":"CD13"},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21033,"validade":"2028-07-28","qtdCx":72,"endereco":"A21","deposito":"CD13"},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20714,"validade":"2028-07-09","qtdCx":60,"endereco":"A22","deposito":"CD13"},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21033,"validade":"2028-07-28","qtdCx":72,"endereco":"A23","deposito":"CD13"},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20714,"validade":"2028-07-09","qtdCx":60,"endereco":"A24","deposito":"CD13"},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20531,"validade":"2028-06-29","qtdCx":60,"endereco":"A25","deposito":"CD13"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":16860,"validade":null,"qtdCx":61,"endereco":"A26","deposito":"CD13"},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20531,"validade":"2028-06-29","qtdCx":60,"endereco":"A27","deposito":"CD13"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","lote":18189,"validade":null,"qtdCx":62,"endereco":"A28","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20920,"validade":"2028-07-21","qtdCx":37,"endereco":"A29","deposito":"CD13"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","lote":20934,"validade":"2028-07-17","qtdCx":65,"endereco":"A30","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20529,"validade":"2028-06-28","qtdCx":90,"endereco":"A31","deposito":"CD13"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","lote":20934,"validade":"2028-07-17","qtdCx":65,"endereco":"A32","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20474,"validade":"2028-06-25","qtdCx":90,"endereco":"A33","deposito":"CD13"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":18100,"validade":null,"qtdCx":65,"endereco":"A34","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21106,"validade":"2028-07-29","qtdCx":90,"endereco":"A35","deposito":"CD13"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","lote":20934,"validade":"2028-07-17","qtdCx":65,"endereco":"A36","deposito":"CD13"},{"sku":3000001024,"descricao":"CERA KIJOIA VERMELHA 0,75L CX12","categoria":"CERA","volume":"0,75L","marca":"KIJOIA","lote":20939,"validade":"2028-07-17","qtdCx":85,"endereco":"B01","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20528,"validade":"2028-06-26","qtdCx":90,"endereco":"B02","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21106,"validade":"2028-07-29","qtdCx":90,"endereco":"B03","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20528,"validade":"2028-06-26","qtdCx":90,"endereco":"B04","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21106,"validade":"2028-07-29","qtdCx":90,"endereco":"B05","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20528,"validade":"2028-06-26","qtdCx":90,"endereco":"B06","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21106,"validade":"2028-07-29","qtdCx":90,"endereco":"B07","deposito":"CD13"},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19610,"validade":"2028-05-15","qtdCx":60,"endereco":"B08","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21106,"validade":"2028-07-29","qtdCx":90,"endereco":"B09","deposito":"CD13"},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19610,"validade":"2028-05-15","qtdCx":60,"endereco":"B10","deposito":"CD13"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20548,"validade":"2028-06-28","qtdCx":90,"endereco":"B11","deposito":"CD13"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20442,"validade":"2028-06-24","qtdCx":66,"endereco":"B12","deposito":"CD13"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20548,"validade":"2028-06-28","qtdCx":90,"endereco":"B13","deposito":"CD13"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20442,"validade":"2028-06-24","qtdCx":66,"endereco":"B14","deposito":"CD13"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20548,"validade":"2028-06-28","qtdCx":90,"endereco":"B15","deposito":"CD13"},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21108,"validade":"2028-07-31","qtdCx":90,"endereco":"B16","deposito":"CD13"},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20914,"validade":"2028-07-17","qtdCx":66,"endereco":"B17","deposito":"CD13"},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21108,"validade":"2028-07-31","qtdCx":90,"endereco":"B18","deposito":"CD13"},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20914,"validade":"2028-07-17","qtdCx":66,"endereco":"B19","deposito":"CD13"},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":16193,"validade":null,"qtdCx":66,"endereco":"B20","deposito":"CD13"},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20435,"validade":"2028-06-23","qtdCx":66,"endereco":"B21","deposito":"CD13"},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":16193,"validade":null,"qtdCx":66,"endereco":"B22","deposito":"CD13"},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20435,"validade":"2028-06-23","qtdCx":66,"endereco":"B23","deposito":"CD13"},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20563,"validade":"2028-06-29","qtdCx":90,"endereco":"B24","deposito":"CD13"},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20366,"validade":"2028-06-16","qtdCx":55,"endereco":"B25","deposito":"CD13"},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20563,"validade":"2028-06-29","qtdCx":90,"endereco":"B26","deposito":"CD13"},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20366,"validade":"2028-06-16","qtdCx":55,"endereco":"B27","deposito":"CD13"},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20563,"validade":"2028-06-29","qtdCx":90,"endereco":"B28","deposito":"CD13"},{"sku":3000001199,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":18913,"validade":"2028-04-17","qtdCx":90,"endereco":"B29","deposito":"CD13"},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"8G","marca":"GEO","lote":18835,"validade":"2028-04-15","qtdCx":140,"endereco":"B30","deposito":"CD13"},{"sku":3000001199,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":18913,"validade":"2028-04-17","qtdCx":90,"endereco":"B31","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3 L","marca":"GEO","lote":21034,"validade":"2028-07-27","qtdCx":90,"endereco":"B32","deposito":"CD13"},{"sku":3000001018,"descricao":"CERA KIJOIA INCOLOR 0,75L CX12","categoria":"CERA","volume":"0,75L","marca":"KIJOIA","lote":20696,"validade":"2028-07-07","qtdCx":85,"endereco":"B33","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3 L","marca":"GEO","lote":21034,"validade":"2028-07-27","qtdCx":90,"endereco":"B34","deposito":"CD13"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":18139,"validade":"2028-03-16","qtdCx":57,"endereco":"B35","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3 L","marca":"GEO","lote":21034,"validade":"2028-07-27","qtdCx":90,"endereco":"B36","deposito":"CD13"},{"sku":3000001209,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":17073,"validade":null,"qtdCx":66,"endereco":"C01","deposito":"CD13"},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21006,"validade":"2028-07-28","qtdCx":72,"endereco":"C02","deposito":"CD13"},{"sku":3000001209,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":17073,"validade":null,"qtdCx":66,"endereco":"C03","deposito":"CD13"},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21006,"validade":"2028-07-28","qtdCx":71,"endereco":"C04","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20528,"validade":"2028-06-26","qtdCx":90,"endereco":"C05","deposito":"CD13"},{"sku":3000000282,"descricao":"MULT GEO TRADICIONAL 0,5L CX12","categoria":"SEM CATEGORIA","volume":"0,5L","marca":"GEO","lote":18960,"validade":"2028-04-23","qtdCx":80,"endereco":"C06","deposito":"CD13"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","lote":20528,"validade":"2028-06-26","qtdCx":90,"endereco":"C07","deposito":"CD13"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":21084,"validade":"2028-07-29","qtdCx":90,"endereco":"C08","deposito":"CD13"},{"sku":3000001212,"descricao":"AMAC FLOM INT ACQUA ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":18422,"validade":"2028-04-01","qtdCx":66,"endereco":"C09","deposito":"CD13"},{"sku":3000000826,"descricao":"DESINF GEO LAVANDA 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","lote":20322,"validade":"2028-06-15","qtdCx":110,"endereco":"C10","deposito":"CD13"},{"sku":3000001212,"descricao":"AMAC FLOM INT ACQUA ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":18422,"validade":"2028-04-01","qtdCx":66,"endereco":"C11","deposito":"CD13"},{"sku":3000000828,"descricao":"DESINF GEO OCEAN 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","lote":21025,"validade":"2028-07-26","qtdCx":109,"endereco":"C12","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20951,"validade":"2028-07-26","qtdCx":90,"endereco":"C13","deposito":"CD13"},{"sku":3000001185,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":18369,"validade":"2028-03-27","qtdCx":60,"endereco":"C14","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20951,"validade":"2028-07-26","qtdCx":90,"endereco":"C15","deposito":"CD13"},{"sku":3000001185,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":18369,"validade":"2028-03-27","qtdCx":60,"endereco":"C16","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20951,"validade":"2028-07-26","qtdCx":90,"endereco":"C17","deposito":"CD13"},{"sku":3000000887,"descricao":"DESINF GEO EUCALIPTO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21007,"validade":"2028-07-24","qtdCx":72,"endereco":"C18","deposito":"CD13"},{"sku":3000000954,"descricao":"DESINF GEO PINHO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":20993,"validade":"2028-07-26","qtdCx":61,"endereco":"C19","deposito":"CD13"},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":20307,"validade":"2028-06-14","qtdCx":56,"endereco":"C21","deposito":"CD13"},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":20307,"validade":"2028-06-14","qtdCx":59,"endereco":"C23","deposito":"CD13"},{"sku":3000000952,"descricao":"DESINF GEO LAVANDA 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":20878,"validade":"2028-07-16","qtdCx":53,"endereco":"C25","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20920,"validade":"2028-07-21","qtdCx":66,"endereco":"C27","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20920,"validade":"2028-07-21","qtdCx":66,"endereco":"C29","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20920,"validade":"2028-07-21","qtdCx":66,"endereco":"C31","deposito":"CD13"},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20915,"validade":"2028-07-20","qtdCx":66,"endereco":"C33","deposito":"CD13"},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20915,"validade":"2028-07-20","qtdCx":66,"endereco":"C35","deposito":"CD13"},{"sku":3000000954,"descricao":"DESINF GEO PINHO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":20993,"validade":"2028-07-26","qtdCx":4,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","lote":18189,"validade":null,"qtdCx":3,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000000952,"descricao":"DESINF GEO LAVANDA 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":20878,"validade":"2028-07-16","qtdCx":4,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":16860,"validade":null,"qtdCx":1,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":18139,"validade":"2028-03-16","qtdCx":4,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":20307,"validade":"2028-06-14","qtdCx":5,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19647,"validade":"2028-05-15","qtdCx":1,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20593,"validade":null,"qtdCx":1,"endereco":"Descarte","deposito":"AVARIA"},{"sku":3000001464,"descricao":"SABAO EM BARRA GEO NEUTRO 160G CX50","categoria":"SABAO EM BARRA","volume":"8G","marca":"GEO","lote":20405,"validade":"2028-06-24","qtdCx":1,"endereco":"PJ17","deposito":"PICKING"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":18872,"validade":"2028-04-16","qtdCx":37,"endereco":"PJ19","deposito":"PICKING"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","lote":11989,"validade":"2027-09-27","qtdCx":2,"endereco":"PJ21","deposito":"PICKING"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","lote":20593,"validade":null,"qtdCx":1,"endereco":"PJ23","deposito":"PICKING"},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20367,"validade":null,"qtdCx":2,"endereco":"PJ25","deposito":"PICKING"},{"sku":3000001238,"descricao":"LAVA ROUPA FLOM BLACK SPORTS 0,9L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"0,9L","marca":"FLOM","lote":17165,"validade":"2028-02-18","qtdCx":2,"endereco":"PJ27","deposito":"PICKING"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20960,"validade":null,"qtdCx":2,"endereco":"PJ29","deposito":"PICKING"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20441,"validade":null,"qtdCx":2,"endereco":"PJ29","deposito":"PICKING"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20442,"validade":"2028-06-24","qtdCx":6,"endereco":"PJ29","deposito":"PICKING"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20473,"validade":"2028-06-26","qtdCx":2,"endereco":"PJ31","deposito":"PICKING"},{"sku":3000001050,"descricao":"TIRA MANCHAS GEO LIQUID 1,5L","categoria":"TIRA MANCHA","volume":"1,5L","marca":"GEO","lote":19670,"validade":"2028-05-17","qtdCx":2,"endereco":"PJ33","deposito":"PICKING"},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"800G","marca":"GEO","lote":17604,"validade":null,"qtdCx":13,"endereco":"PJ35","deposito":"PICKING"},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"800G","marca":"GEO","lote":18153,"validade":null,"qtdCx":47,"endereco":"PJ35","deposito":"PICKING"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3L","marca":"GEO","lote":20518,"validade":null,"qtdCx":90,"endereco":"QUARENTENA","deposito":"Quarentena"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3L","marca":"GEO","lote":20533,"validade":"2028-06-26","qtdCx":180,"endereco":"QUARENTENA","deposito":"Quarentena"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":18139,"validade":"2028-03-16","qtdCx":4,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":16860,"validade":null,"qtdCx":3,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000000952,"descricao":"DESINF GEO LAVANDA 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","lote":20878,"validade":"2028-07-16","qtdCx":8,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","lote":21006,"validade":"2028-07-28","qtdCx":1,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000000828,"descricao":"DESINF GEO OCEAN 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","lote":21025,"validade":"2028-07-26","qtdCx":1,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21226,"validade":"2028-08-04","qtdCx":40,"endereco":"C30","deposito":"CD13"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21226,"validade":"2028-08-04","qtdCx":40,"endereco":"C32","deposito":"CD13"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21226,"validade":"2028-08-04","qtdCx":40,"endereco":"C34","deposito":"CD13"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21226,"validade":"2028-08-04","qtdCx":40,"endereco":"D04","deposito":"CD13"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21226,"validade":"2028-08-04","qtdCx":40,"endereco":"D06","deposito":"CD13"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20442,"validade":"2028-06-24","qtdCx":60,"endereco":"C24","deposito":"CD13"},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":20435,"validade":"2028-06-23","qtdCx":60,"endereco":"D11","deposito":"CD13"},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20893,"validade":"2028-07-17","qtdCx":63,"endereco":"D02","deposito":"CD13"},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20893,"validade":"2028-07-17","qtdCx":3,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19610,"validade":"2028-05-15","qtdCx":60,"endereco":"D01","deposito":"CD13"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","lote":18901,"validade":"2028-04-21","qtdCx":60,"endereco":"D19","deposito":"CD13"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","lote":18901,"validade":"2028-04-21","qtdCx":60,"endereco":"D21","deposito":"CD13"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","lote":18901,"validade":"2028-04-21","qtdCx":60,"endereco":"D33","deposito":"CD13"},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21045,"validade":"2028-07-27","qtdCx":66,"endereco":"C22","deposito":"CD13"},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21045,"validade":"2028-07-27","qtdCx":65,"endereco":"D35","deposito":"CD13"},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21045,"validade":"2028-07-27","qtdCx":1,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21020,"validade":"2028-07-29","qtdCx":66,"endereco":"D13","deposito":"CD13"},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","lote":21020,"validade":"2028-07-29","qtdCx":66,"endereco":"D31","deposito":"CD13"},{"sku":3000000534,"descricao":"LIMPA VIDROS GEO 05,L CX12","categoria":"LIMPA VIDRO","volume":"0,5L","marca":"GEO","lote":20272,"validade":"2028-06-10","qtdCx":80,"endereco":"D17","deposito":"CD13"},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":20307,"validade":"2028-06-14","qtdCx":60,"endereco":"D05","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20459,"validade":"2028-06-24","qtdCx":90,"endereco":"D23","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20459,"validade":"2028-06-24","qtdCx":69,"endereco":"D29","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":20951,"validade":"2028-07-26","qtdCx":56,"endereco":"D03","deposito":"CD13"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","lote":21058,"validade":"2028-07-24","qtdCx":55,"endereco":"D08","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":21008,"validade":"2028-07-22","qtdCx":66,"endereco":"C26","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":18641,"validade":"2028-04-06","qtdCx":41,"endereco":"D10","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":21008,"validade":"2028-07-22","qtdCx":66,"endereco":"C28","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20919,"validade":"2028-07-21","qtdCx":66,"endereco":"D15","deposito":"CD13"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","lote":20919,"validade":"2028-07-21","qtdCx":1,"endereco":"REEMBALAR","deposito":"REEMBALAR"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":18872,"validade":"2028-04-16","qtdCx":90,"endereco":"D07","deposito":"CD13"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","lote":20549,"validade":"2028-06-29","qtdCx":90,"endereco":"D09","deposito":"CD13"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","lote":19647,"validade":"2028-05-15","qtdCx":60,"endereco":"C36","deposito":"CD13"},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21225,"validade":"2028-08-05","qtdCx":64,"endereco":"D27","deposito":"CD13"},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","lote":21225,"validade":"2028-08-05","qtdCx":64,"endereco":"D25","deposito":"CD13"}],"cargas":[{"id":"03-08-26","data":"2026-08-03","nf":"163","titulo":"CARGA 03 AGOSTO 2026","totalPaletesInformado":22,"motorista":"Ivanio","veiculo":"SDK9G04","paletesVazios":0,"items":[{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":62,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":3,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":5,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":10,"lote":null,"qtdConferida":10,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","categoria":"LAVA LOUCA","volume":"0,5L","marca":"GEO","qtdCx":2,"lote":null,"qtdConferida":1,"endereco":null,"divergencia":0,"avariaDescarte":1,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000923,"descricao":"MULT GEO NEUTRALIZA ODOR 0,5L CX12","categoria":"NEUTRALIZA ODOR","volume":"0,5L","marca":"GEO","qtdCx":80,"lote":null,"qtdConferida":80,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":62,"endereco":null,"divergencia":0,"avariaDescarte":3,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":65,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":65,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","categoria":"DESINFETANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":65,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12 (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12 (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12 (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":22,"lote":null,"qtdConferida":2,"endereco":null,"divergencia":-20,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":37,"lote":null,"qtdConferida":37,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":37,"lote":null,"qtdConferida":37,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPAS LIQUIDO","volume":"3 L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001050,"descricao":"TIRA MANCHAS GEO LIQUID 1,5L","categoria":"TIRA MANCHA","volume":"1,5L","marca":"GEO","qtdCx":2,"lote":null,"qtdConferida":2,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":"Sem NF"},{"sku":3000001238,"descricao":"LAVA ROUPA FLOM BLACK SPORTS 0,9L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":2,"lote":null,"qtdConferida":2,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":"Sem NF"},{"sku":3000001464,"descricao":"SABAO EM BARRA GEO NEUTRO 160G CX50","categoria":"SABAO EM BARRA","volume":"8G","marca":"GEO","qtdCx":1,"lote":null,"qtdConferida":1,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":"Sem NF"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","qtdCx":2,"lote":null,"qtdConferida":2,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":"Sem NF"},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":2,"lote":null,"qtdConferida":2,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":"Sem NF"}]},{"id":"08-08-26","data":"2026-08-08","nf":"140222","titulo":"CARGA 08 AGOSTO 2026","totalPaletesInformado":48,"motorista":"Cristovao Oliveira","veiculo":"TGH0A53","paletesVazios":14,"items":[{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001024,"descricao":"CERA KIJOIA VERMELHA 0,75L CX12","categoria":"CERA","volume":"0,75L","marca":"KIJOIA","qtdCx":85,"lote":null,"qtdConferida":85,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001018,"descricao":"CERA KIJOIA INCOLOR 0,75L CX12","categoria":"CERA","volume":"0,75L","marca":"KIJOIA","qtdCx":85,"lote":null,"qtdConferida":85,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000952,"descricao":"DESINF GEO LAVANDA 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":53,"endereco":null,"divergencia":0,"avariaDescarte":4,"reembalar":8,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":180,"endereco":null,"divergencia":90,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":180,"endereco":null,"divergencia":90,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":180,"endereco":null,"divergencia":90,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"800G","marca":"GEO","qtdCx":140,"lote":null,"qtdConferida":140,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"800G","marca":"GEO","qtdCx":13,"lote":null,"qtdConferida":13,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","categoria":"SABAO EM BARRA","volume":"800G","marca":"GEO","qtdCx":47,"lote":null,"qtdConferida":47,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":55,"endereco":null,"divergencia":0,"avariaDescarte":5,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000954,"descricao":"DESINF GEO PINHO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":61,"endereco":null,"divergencia":0,"avariaDescarte":4,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","categoria":"DESINFENTANTE","volume":"2L","marca":"GEO","qtdCx":65,"lote":null,"qtdConferida":61,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":4,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":55,"lote":null,"qtdConferida":55,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001233,"descricao":"LAVA ROUPA FLOM CLASSIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":55,"lote":null,"qtdConferida":55,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":59,"endereco":null,"divergencia":0,"avariaDescarte":1,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001199,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001199,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null}]},{"id":"12-08-26","data":"2026-08-12","nf":"140221","titulo":"CARGA 10 AGOSTO 2026","totalPaletesInformado":30,"motorista":"EDIVAN OLIVEIRA","veiculo":"TFT0A22","paletesVazios":0,"items":[{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000282,"descricao":"MULT GEO TRADICIONAL 0,5L CX12","categoria":"SEM CATEGORIA","volume":"0,5L","marca":"GEO","qtdCx":80,"lote":null,"qtdConferida":80,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12  (NOVO SHAPE)","categoria":"AMACIANTE CONCENTRADO","volume":"0.5 L","marca":"FLOM","qtdCx":90,"lote":null,"qtdConferida":90,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001185,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001185,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001209,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001209,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001212,"descricao":"AMAC FLOM INT ACQUA ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001212,"descricao":"AMAC FLOM INT ACQUA ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000723,"descricao":"DESINF GEO EUCALIPTO 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","qtdCx":110,"lote":null,"qtdConferida":110,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000723,"descricao":"DESINF GEO EUCALIPTO 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","qtdCx":110,"lote":null,"qtdConferida":110,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":71,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":1,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000887,"descricao":"DESINF GEO EUCALIPTO 1L CX12","categoria":"DESINFETANTE","volume":"1L","marca":"GEO","qtdCx":72,"lote":null,"qtdConferida":72,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000828,"descricao":"DESINF GEO OCEAN 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","qtdCx":110,"lote":null,"qtdConferida":109,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":1,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000826,"descricao":"DESINF GEO LAVANDA 0,5L CX12","categoria":"DESINFETANTE","volume":"0,5L","marca":"GEO","qtdCx":110,"lote":null,"qtdConferida":110,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001239,"descricao":"LAVA ROUPAS FLOM CLASSIC 1,8L CX06","categoria":"LAVA ROUPA LIQUIDO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001239,"descricao":"LAVA ROUPAS FLOM CLASSIC 1,8L CX06","categoria":"LAVA ROUPA LIQUIDO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":null,"qtdConferida":60,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":null,"qtdConferida":66,"endereco":null,"divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null}]},{"id":"15-08-26","data":"2026-08-15","nf":"140699","titulo":"CARGA 15 AGOSTO 2026","totalPaletesInformado":30,"motorista":"","veiculo":"TGE3D24 26956","paletesVazios":2,"items":[{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":40,"lote":21226,"qtdConferida":40,"endereco":"C30","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":40,"lote":21226,"qtdConferida":40,"endereco":"C32","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":40,"lote":21226,"qtdConferida":40,"endereco":"C34","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":40,"lote":21226,"qtdConferida":40,"endereco":"D04","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":40,"lote":21226,"qtdConferida":40,"endereco":"D06","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":60,"lote":20442,"qtdConferida":60,"endereco":"C24","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001234,"descricao":"LAVA ROUPA FLOM MYTIC 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":60,"lote":20435,"qtdConferida":60,"endereco":"D11","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001214,"descricao":"AMAC FLOM SENSUAL ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":20893,"qtdConferida":63,"endereco":"D02","divergencia":0,"avariaDescarte":0,"reembalar":3,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":19610,"qtdConferida":60,"endereco":"D01","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","qtdCx":60,"lote":18901,"qtdConferida":60,"endereco":"D19","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","qtdCx":60,"lote":18901,"qtdConferida":60,"endereco":"D21","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001175,"descricao":"LR LIQUIDO GEO ACTION COCO 1L CX12","categoria":"LAVA ROUPAS LIQUIDO","volume":"1L","marca":"GEO","qtdCx":60,"lote":18901,"qtdConferida":60,"endereco":"D33","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21045,"qtdConferida":66,"endereco":"C22","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21045,"qtdConferida":65,"endereco":"D35","divergencia":0,"avariaDescarte":0,"reembalar":1,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21020,"qtdConferida":66,"endereco":"D13","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","categoria":"LAVA ROUPA LIQUIDO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21020,"qtdConferida":66,"endereco":"D31","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000000534,"descricao":"LIMPA VIDROS GEO 05,L CX12","categoria":"LIMPA VIDRO","volume":"0,5L","marca":"GEO","qtdCx":80,"lote":20272,"qtdConferida":80,"endereco":"D17","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":20307,"qtdConferida":60,"endereco":"D05","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":90,"lote":20459,"qtdConferida":90,"endereco":"D23","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":69,"lote":20459,"qtdConferida":69,"endereco":"D29","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":56,"lote":20951,"qtdConferida":56,"endereco":"D03","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","categoria":"LAVA ROUPA LIQUIDO","volume":"3L","marca":"GEO","qtdCx":55,"lote":21058,"qtdConferida":55,"endereco":"D08","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21008,"qtdConferida":66,"endereco":"C26","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":42,"lote":18641,"qtdConferida":41,"endereco":"D10","divergencia":0,"avariaDescarte":0,"reembalar":1,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":21008,"qtdConferida":66,"endereco":"C28","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,9L","marca":"FLOM","qtdCx":66,"lote":20919,"qtdConferida":66,"endereco":"D15","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":18872,"qtdConferida":90,"endereco":"D07","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","categoria":"AMACIANTE CONCENTRADO","volume":"0,5L","marca":"FLOM","qtdCx":90,"lote":20549,"qtdConferida":90,"endereco":"D09","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","categoria":"AMACIANTE CONCENTRADO","volume":"1,8L","marca":"FLOM","qtdCx":60,"lote":19647,"qtdConferida":60,"endereco":"C36","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":64,"lote":21225,"qtdConferida":64,"endereco":"D27","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","categoria":"LAVA ROUPA PO","volume":"1,6KG","marca":"GEO","qtdCx":64,"lote":21225,"qtdConferida":64,"endereco":"D25","divergencia":0,"avariaDescarte":0,"reembalar":0,"naoVeio":0,"quarentena":0,"obs":null}]}],"paletesResumo":{"emUso":146.0,"vaziosBons":2.0,"vaziosDanificados":1.0,"total":149.0},"sap":[{"sku":3000000923,"descricao":"MULT GEO NEUTRALIZA ODOR 0,5L CX12","lote":18109,"qtd":26,"validade":"2027-03-18"},{"sku":3000000923,"descricao":"MULT GEO NEUTRALIZA ODOR 0,5L CX12","lote":20221,"qtd":54,"validade":"2027-06-10"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","lote":11619,"qtd":1,"validade":"2027-09-11"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO COCO 1L CX12","lote":11989,"qtd":2,"validade":"2027-09-27"},{"sku":3000001209,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,9L CX12","lote":17123,"qtd":132,"validade":"2028-02-17"},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK SPORTS 0,9L CX12","lote":17165,"qtd":2,"validade":"2028-02-18"},{"sku":3000001238,"descricao":"LAVA ROUPAS FLOM BLACK SPORTS 0,9L CX12","lote":17165,"qtd":132,"validade":"2028-02-18"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","lote":17481,"qtd":16,"validade":"2028-02-26"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","lote":18099,"qtd":61,"validade":"2028-03-13"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","lote":18099,"qtd":69,"validade":"2028-03-13"},{"sku":3000000951,"descricao":"DESINF GEO EUCALIPTO 2L CX06","lote":18139,"qtd":65,"validade":"2028-03-16"},{"sku":3000001185,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 1,8L CX06","lote":18369,"qtd":120,"validade":"2028-03-27"},{"sku":3000001212,"descricao":"AMAC FLOM INT ACQUA ANTIFRI 0,9L CX12","lote":18422,"qtd":132,"validade":"2028-04-01"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":18641,"qtd":20,"validade":"2028-04-06"},{"sku":3000001455,"descricao":"SABAO EM BARRA GEO NEUTRO 800G CX10","lote":18835,"qtd":200,"validade":"2028-04-15"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","lote":18872,"qtd":30,"validade":"2028-04-16"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","lote":18872,"qtd":120,"validade":"2028-04-16"},{"sku":3000001199,"descricao":"AMAC FLOM INT SENSUAL ANTIFRI 0,5L CX12","lote":18913,"qtd":180,"validade":"2028-04-17"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":18884,"qtd":2,"validade":"2028-04-17"},{"sku":3000001175,"descricao":"LR LIQUIDO GEO COCO 1L CX12","lote":18901,"qtd":180,"validade":"2028-04-21"},{"sku":3000000282,"descricao":"MULT GEO TRADICIONAL 0,5L CX12","lote":18960,"qtd":80,"validade":"2028-04-23"},{"sku":3000001183,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 1,8L CX06","lote":19647,"qtd":179,"validade":"2028-05-15"},{"sku":3000001184,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 1,8L CX06","lote":19610,"qtd":180,"validade":"2028-05-15"},{"sku":3000001050,"descricao":"TIRA MANCHAS LIQ GEO 1,5L CX06","lote":19670,"qtd":2,"validade":"2028-05-17"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20168,"qtd":9,"validade":"2028-06-02"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20168,"qtd":3,"validade":"2028-06-02"},{"sku":3000000534,"descricao":"LIMPA VIDROS GEO 0,5L CX12","lote":20272,"qtd":80,"validade":"2028-06-10"},{"sku":3000001182,"descricao":"AMAC FLOM TRAD ANTIFRI 1,8L CX06","lote":20307,"qtd":180,"validade":"2028-06-14"},{"sku":3000000723,"descricao":"DESINF GEO EUCALIPTO 0,5L CX12","lote":20324,"qtd":220,"validade":"2028-06-15"},{"sku":3000000826,"descricao":"DESINF GEO LAVANDA 0,5L CX12","lote":20322,"qtd":110,"validade":"2028-06-15"},{"sku":3000001239,"descricao":"LAVA ROUPAS FLOM CLASSIC 1,8L CX06","lote":20338,"qtd":120,"validade":"2028-06-15"},{"sku":3000001233,"descricao":"LAVA ROUPAS FLOM CLASSIC 0,9L CX12","lote":20366,"qtd":2,"validade":"2028-06-16"},{"sku":3000001233,"descricao":"LAVA ROUPAS FLOM CLASSIC 0,9L CX12","lote":20366,"qtd":110,"validade":"2028-06-16"},{"sku":3000001234,"descricao":"LAVA ROUPAS FLOM MYSTIC 0,9L CX12","lote":20435,"qtd":192,"validade":"2028-06-23"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","lote":20442,"qtd":10,"validade":"2028-06-24"},{"sku":3000001208,"descricao":"AMAC FLOM TRAD ANTIFRI 0,9L CX12","lote":20442,"qtd":192,"validade":"2028-06-24"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20459,"qtd":90,"validade":"2028-06-24"},{"sku":3000001464,"descricao":"SABAO EM BARRA GEO NEUTRO 160G CX50","lote":20405,"qtd":1,"validade":"2028-06-24"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":20474,"qtd":90,"validade":"2028-06-25"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":20474,"qtd":80,"validade":"2028-06-25"},{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","lote":20458,"qtd":60,"validade":"2028-06-25"},{"sku":3000000229,"descricao":"LAVA LOUCAS GEO CLEAR 0,5L PC24","lote":20458,"qtd":60,"validade":"2028-06-25"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","lote":20528,"qtd":90,"validade":"2028-06-26"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","lote":20528,"qtd":396,"validade":"2028-06-26"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":20473,"qtd":12,"validade":"2028-06-26"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20533,"qtd":119,"validade":"2028-06-26"},{"sku":3000001169,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,5L CX12","lote":20529,"qtd":38,"validade":"2028-06-28"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","lote":20548,"qtd":330,"validade":"2028-06-28"},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","lote":20530,"qtd":60,"validade":"2028-06-28"},{"sku":3000000230,"descricao":"LAVA LOUCAS GEO COCO 0,5L PC24","lote":20530,"qtd":60,"validade":"2028-06-28"},{"sku":3000001195,"descricao":"AMAC FLOM SENSITIVE ANTIFRI 0,5L CX12","lote":20563,"qtd":270,"validade":"2028-06-29"},{"sku":3000001196,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,5L CX12","lote":20549,"qtd":7,"validade":"2028-06-29"},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","lote":20531,"qtd":60,"validade":"2028-06-29"},{"sku":3000000231,"descricao":"LAVA LOUCAS GEO LIMAO 0,5L PC24","lote":20531,"qtd":60,"validade":"2028-06-29"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","lote":20640,"qtd":24,"validade":"2028-07-06"},{"sku":3000001018,"descricao":"CERA KIJOIA INCOLOR 0,75L CX12","lote":20696,"qtd":85,"validade":"2028-07-07"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","lote":20697,"qtd":36,"validade":"2028-07-07"},{"sku":3000000233,"descricao":"LAVA LOUCAS GEO NEUTRO 0,5L PC24","lote":20697,"qtd":62,"validade":"2028-07-07"},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","lote":20714,"qtd":60,"validade":"2028-07-09"},{"sku":3000000232,"descricao":"LAVA LOUCAS GEO MACA 0,5L PC24","lote":20714,"qtd":60,"validade":"2028-07-09"},{"sku":3000000952,"descricao":"DESINF GEO LAVANDA 2L CX06","lote":20878,"qtd":65,"validade":"2028-07-16"},{"sku":3000001214,"descricao":"AMAC FLOM INT SENSUAL ANTIFRI 0,9L CX12","lote":20893,"qtd":66,"validade":"2028-07-17"},{"sku":3000001214,"descricao":"AMAC FLOM INT SENSUAL ANTIFRI 0,9L CX12","lote":20893,"qtd":66,"validade":"2028-07-17"},{"sku":3000001214,"descricao":"AMAC FLOM INT SENSUAL ANTIFRI 0,9L CX12","lote":20893,"qtd":66,"validade":"2028-07-17"},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","lote":20914,"qtd":66,"validade":"2028-07-17"},{"sku":3000001210,"descricao":"AMAC FLOM WHITE PETALS ANTIFRI 0,9L CX12","lote":20914,"qtd":66,"validade":"2028-07-17"},{"sku":3000001024,"descricao":"CERA KIJOIA VERMELHA 0,75L CX12","lote":20939,"qtd":85,"validade":"2028-07-17"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20934,"qtd":53,"validade":"2028-07-17"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20934,"qtd":65,"validade":"2028-07-17"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20934,"qtd":65,"validade":"2028-07-17"},{"sku":3000000953,"descricao":"DESINF GEO OCEAN 2L CX06","lote":20934,"qtd":65,"validade":"2028-07-17"},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","lote":20915,"qtd":66,"validade":"2028-07-20"},{"sku":3000001213,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,9L CX12","lote":20915,"qtd":66,"validade":"2028-07-20"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20920,"qtd":49,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20920,"qtd":31,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20920,"qtd":17,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20919,"qtd":66,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20919,"qtd":28,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20920,"qtd":66,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":20920,"qtd":66,"validade":"2028-07-21"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":21008,"qtd":66,"validade":"2028-07-22"},{"sku":3000001211,"descricao":"AMAC FLOM INT MYSTIC ANTIFRI 0,9L CX12","lote":21008,"qtd":66,"validade":"2028-07-22"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20952,"qtd":38,"validade":"2028-07-22"},{"sku":3000000887,"descricao":"DESINF GEO EUCALIPTO 1L CX12","lote":21007,"qtd":72,"validade":"2028-07-24"},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","lote":20999,"qtd":72,"validade":"2028-07-24"},{"sku":3000000830,"descricao":"DESINF GEO PINHO 1L CX12","lote":20999,"qtd":72,"validade":"2028-07-24"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":21058,"qtd":55,"validade":"2028-07-24"},{"sku":3000000828,"descricao":"DESINF GEO OCEAN 0,5L CX12","lote":21025,"qtd":110,"validade":"2028-07-26"},{"sku":3000000954,"descricao":"DESINF GEO PINHO 2L CX06","lote":20993,"qtd":65,"validade":"2028-07-26"},{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","lote":21032,"qtd":66,"validade":"2028-07-26"},{"sku":3000001236,"descricao":"LAVA ROUPAS FLOM SENSITIVE 0,9L CX12","lote":21032,"qtd":66,"validade":"2028-07-26"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20951,"qtd":90,"validade":"2028-07-26"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20951,"qtd":90,"validade":"2028-07-26"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20951,"qtd":90,"validade":"2028-07-26"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":20951,"qtd":56,"validade":"2028-07-26"},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","lote":21045,"qtd":66,"validade":"2028-07-27"},{"sku":3000001237,"descricao":"LAVA ROUPAS FLOM DELICATE 0,9L CX12","lote":21045,"qtd":66,"validade":"2028-07-27"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":21034,"qtd":90,"validade":"2028-07-27"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":21034,"qtd":90,"validade":"2028-07-27"},{"sku":3000001519,"descricao":"LR LIQUIDO GEO ACTION 3L CX03","lote":21034,"qtd":90,"validade":"2028-07-27"},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","lote":21006,"qtd":72,"validade":"2028-07-28"},{"sku":3000000713,"descricao":"DESINF GEO LAVANDA 1L CX12","lote":21006,"qtd":72,"validade":"2028-07-28"},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","lote":21033,"qtd":72,"validade":"2028-07-28"},{"sku":3000000722,"descricao":"DESINF GEO OCEAN 1L CX12","lote":21033,"qtd":72,"validade":"2028-07-28"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21106,"qtd":90,"validade":"2028-07-29"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21106,"qtd":4,"validade":"2028-07-29"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21084,"qtd":90,"validade":"2028-07-29"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21106,"qtd":86,"validade":"2028-07-29"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21106,"qtd":90,"validade":"2028-07-29"},{"sku":3000001193,"descricao":"AMAC FLOM TRAD ANTIFRI 0,5L CX12","lote":21106,"qtd":90,"validade":"2028-07-29"},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","lote":21020,"qtd":66,"validade":"2028-07-29"},{"sku":3000001235,"descricao":"LAVA ROUPAS FLOM EXPERT 0,9L CX12","lote":21020,"qtd":66,"validade":"2028-07-29"},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","lote":21108,"qtd":90,"validade":"2028-07-31"},{"sku":3000001198,"descricao":"AMAC FLOM INT BREEZE ANTIFRI 0,5L CX12","lote":21108,"qtd":90,"validade":"2028-07-31"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","lote":21226,"qtd":40,"validade":"2028-08-04"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","lote":21226,"qtd":40,"validade":"2028-08-04"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","lote":21226,"qtd":40,"validade":"2028-08-04"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","lote":21226,"qtd":40,"validade":"2028-08-04"},{"sku":3000001369,"descricao":"LR PO GEO CART ACTION 1,6KG CX09","lote":21226,"qtd":40,"validade":"2028-08-04"},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","lote":21225,"qtd":64,"validade":"2028-08-05"},{"sku":3000001328,"descricao":"LR PO GEO SACHE ACTION 1,6KG FD10","lote":21379,"qtd":64,"validade":"2028-08-05"}]}
+</script>
+
+<script>
+/* ============ StockFlow BH — lógica do painel ============ */
+const RAW = JSON.parse(document.getElementById('embedded-data').textContent);
+const ORIGINAL = JSON.parse(JSON.stringify(RAW));
+
+const DEP_GROUPS = {
+  cd13:       { label:'CD13',                nome:'CD13 · Armazenagem & Picking', deps:['CD13','PICKING'], color:'cd13',
+                desc:'Área principal de armazenagem em racks e a faixa de picking (PJ) usada para separação fracionada.' },
+  quarentena: { label:'Quarentena',           nome:'Quarentena',                   deps:['Quarentena'], color:'quarentena',
+                desc:'Produtos retidos aguardando decisão — inspeção, liberação ou encaminhamento para reembalagem/descarte.' },
+  reembalar:  { label:'Reembalar',            nome:'Reembalar',                    deps:['REEMBALAR'], color:'reembalar',
+                desc:'Itens com embalagem danificada que ainda têm o conteúdo aproveitável e aguardam reprocesso.' },
+  descarte:   { label:'Avariar (Descarte)',   nome:'Avariar / Descarte',           deps:['Descarte','AVARIA'], color:'descarte',
+                desc:'Caixas avariadas sem possibilidade de recuperação, prontas para baixa e descarte definitivo.' },
+};
+const TAB_ORDER = ['geral','cd13','quarentena','reembalar','descarte','cargas','validade','divergencia','sap'];
+const TAB_LABEL = {geral:'Visão Geral', cd13:'CD13', quarentena:'Quarentena', reembalar:'Reembalar', descarte:'Avariar (Descarte)', cargas:'Cargas', validade:'Validade', divergencia:'Divergência', sap:'Confronto SAP'};
+const TAB_COLOR = {geral:'brand', cd13:'cd13', quarentena:'quarentena', reembalar:'reembalar', descarte:'descarte', cargas:'brand', validade:'brand', divergencia:'brand', sap:'brand'};
+
+const CAT_NORM = {
+  'DESINFENTANTE':'DESINFETANTE',
+  'LAVA ROUPAS LIQUIDO':'LAVA ROUPA LIQUIDO',
+};
+function normCat(c){ return CAT_NORM[c] || c || 'SEM CATEGORIA'; }
+
+const state = {
+  data: JSON.parse(JSON.stringify(ORIGINAL)),
+  tab: 'geral',
+  search: '',
+  categoria: '',
+  from: null,
+  to: null,
+  addressFilter: null,
+  openCarga: null,
+};
+
+/* ---------------- helpers ---------------- */
+const fmtInt = n => (n||0).toLocaleString('pt-BR');
+const fmtPct = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+function daysUntil(iso){
+  if(!iso) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(iso+'T00:00:00');
+  return Math.round((target-today)/86400000);
+}
+function validadeStatus(iso){
+  const d = daysUntil(iso);
+  if(d==null) return {tag:'Sem data', cls:'', d:null};
+  if(d<0) return {tag:'Vencido', cls:'soft-descarte', d};
+  if(d<=60) return {tag:'Crítico', cls:'soft-descarte', d};
+  if(d<=180) return {tag:'Atenção', cls:'soft-quarentena', d};
+  return {tag:'OK', cls:'soft-ok', d};
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+function matchesSearch(row){
+  if(!state.search) return true;
+  const q = state.search.toLowerCase();
+  return String(row.sku).includes(q) ||
+         (row.descricao||'').toLowerCase().includes(q) ||
+         (row.endereco||'').toLowerCase().includes(q);
+}
+function matchesCategoria(row){
+  if(!state.categoria) return true;
+  return normCat(row.categoria) === state.categoria;
+}
+function inPeriod(dateStr){
+  if(!dateStr) return true;
+  if(state.from && dateStr < state.from) return false;
+  if(state.to && dateStr > state.to) return false;
+  return true;
+}
+
+/* lê as colunas estruturadas de ocorrência de um item de carga (sem regex — direto das colunas) */
+function classifyItem(item){
+  const entries = [];
+  if(item.avariaDescarte) entries.push({tipo:'descarte', qtd:item.avariaDescarte, raw:`Avaria/Descarte: ${item.avariaDescarte} cx`});
+  if(item.reembalar)      entries.push({tipo:'reembalar', qtd:item.reembalar, raw:`Reembalar: ${item.reembalar} cx`});
+  if(item.naoVeio)        entries.push({tipo:'naoveio', qtd:item.naoVeio, raw:`Não veio/faltando: ${item.naoVeio} cx`});
+  if(item.quarentena)     entries.push({tipo:'quarentena', qtd:item.quarentena, raw:`Quarentena: ${item.quarentena} cx`});
+  if(item.obs)            entries.push({tipo:'obs', qtd:0, raw:item.obs});
+  if(entries.length===0){
+    entries.push({tipo:(item.divergencia||0)===0 ? 'ok' : 'outro', qtd:0, raw:''});
+  }
+  return entries;
+}
+/* checa se a divergência de quantidade desta linha está explicada.
+   Avaria/Reembalar/Quarentena NÃO contam aqui — são destino de itens que chegaram,
+   não motivo de falta. Só "não veio" representa item que realmente não chegou. */
+function itemReconciles(item){
+  return (item.naoVeio||0) === Math.abs(item.divergencia||0);
+}
+
+function normDep(s){ return String(s==null?'':s).trim().toUpperCase(); }
+function itemsForDep(key){
+  const deps = DEP_GROUPS[key].deps.map(normDep);
+  return state.data.estoque.filter(r => deps.includes(normDep(r.deposito)));
+}
+function filteredCargas(){
+  return state.data.cargas.filter(c => inPeriod(c.data));
+}
+
+/* ============ CONFRONTO SAP (físico x sistema, por código + lote) ============ */
+function computeSapConfronto(){
+  const wmsLote = new Map(); // key "sku|lote" -> {sku,lote,qtd,descricao}
+  const wmsSku = new Map();  // key sku -> qtd
+  const descBySku = new Map();
+  (state.data.estoque||[]).forEach(r=>{
+    const lote = r.lote==null||r.lote==='' ? null : r.lote;
+    const key = r.sku+'|'+lote;
+    if(!wmsLote.has(key)) wmsLote.set(key, {sku:r.sku, lote, qtd:0});
+    wmsLote.get(key).qtd += r.qtdCx||0;
+    wmsSku.set(r.sku, (wmsSku.get(r.sku)||0) + (r.qtdCx||0));
+    if(!descBySku.has(r.sku)) descBySku.set(r.sku, r.descricao);
+  });
+
+  const sapLote = new Map();
+  const sapSku = new Map();
+  (state.data.sap||[]).forEach(r=>{
+    const lote = r.lote==null ? null : r.lote;
+    const key = r.sku+'|'+lote;
+    if(!sapLote.has(key)) sapLote.set(key, {sku:r.sku, lote, qtd:0});
+    sapLote.get(key).qtd += r.qtd||0;
+    sapSku.set(r.sku, (sapSku.get(r.sku)||0) + (r.qtd||0));
+    if(!descBySku.has(r.sku)) descBySku.set(r.sku, r.descricao);
+  });
+
+  const loteKeys = new Set([...wmsLote.keys(), ...sapLote.keys()]);
+  const porLote = [...loteKeys].map(key=>{
+    const [skuStr, loteStr] = key.split('|');
+    const sku = Number(skuStr);
+    const lote = loteStr==='null' ? null : loteStr;
+    const wQ = wmsLote.has(key) ? wmsLote.get(key).qtd : 0;
+    const sQ = sapLote.has(key) ? sapLote.get(key).qtd : 0;
+    let status;
+    if(wQ>0 && sQ>0) status = wQ===sQ ? 'ok' : 'diverge';
+    else if(wQ>0 && sQ===0) status = 'sem_sap';
+    else status = 'sem_wms';
+    const skuTotalOk = (wmsSku.get(sku)||0) === (sapSku.get(sku)||0);
+    return {sku, lote, descricao: descBySku.get(sku)||'', wms:wQ, sap:sQ, diff:wQ-sQ, status, soLote: status!=='ok' && skuTotalOk};
+  }).sort((a,b)=> Math.abs(b.diff)-Math.abs(a.diff));
+
+  const skuKeys = new Set([...wmsSku.keys(), ...sapSku.keys()]);
+  const porSku = [...skuKeys].map(sku=>{
+    const wQ = wmsSku.get(sku)||0, sQ = sapSku.get(sku)||0;
+    return {sku, descricao: descBySku.get(sku)||'', wms:wQ, sap:sQ, diff:wQ-sQ, ok: wQ===sQ};
+  }).sort((a,b)=> Math.abs(b.diff)-Math.abs(a.diff));
+
+  return {porLote, porSku};
+}
+
+/* ============ AGGREGATE COMPUTATIONS ============ */
+function computeGlobalKPIs(){
+  const estoque = state.data.estoque;
+  const cargas = filteredCargas();
+  const totalCxEstoque = estoque.reduce((s,r)=>s+ (r.qtdCx||0), 0);
+  // saldo real / faturável: SOMENTE o que está no depósito CD13 (racks + picking) pode ser faturado.
+  // Quarentena, Reembalar e Avariar/Descarte ficam fora do saldo vendável.
+  const cd13Rows = itemsForDep('cd13');
+  const saldoReal = cd13Rows.reduce((s,r)=>s+(r.qtdCx||0),0);
+  const saldoRealPosicoes = new Set(cd13Rows.map(r=>r.endereco)).size;
+  let cxPrevista=0, cxConferida=0, avarias=0, excesso=0, divergAbs=0;
+  cargas.forEach(c=> c.items.forEach(it=>{
+    cxPrevista += it.qtdCx||0;
+    cxConferida += it.qtdConferida||0;
+    divergAbs += Math.abs(it.divergencia||0);
+    if((it.divergencia||0)>0) excesso += it.divergencia;
+    classifyItem(it).forEach(e=>{
+      if(e.tipo==='descarte' || e.tipo==='naoveio') avarias += e.qtd;
+    });
+  }));
+  const pctAvarias = cxPrevista ? (avarias/cxPrevista*100) : 0;
+  const acuracidade = cxPrevista ? Math.max(0,(1 - divergAbs/cxPrevista))*100 : 100;
+  return {
+    posicoes: estoque.length,
+    totalCxEstoque, saldoReal, saldoRealPosicoes,
+    cargasCount: cargas.length,
+    cxPrevista, cxConferida, avarias, excesso, pctAvarias, acuracidade,
+    paletes: state.data.paletesResumo
+  };
+}
+
+/* Resumo do período — reparte as caixas previstas em duas trilhas, sem contar nada duas vezes:
+   (1) o que FOI recebido (qtdConferida) se divide por qualidade — Avaria/Reembalar/Quarentena
+       são sinalizações sobre caixas que chegaram, então ficam limitadas ao que foi de fato
+       recebido naquela linha (nunca "roubam" fatia do que faltou);
+   (2) o que NÃO foi recebido (a falta, previstas-conferidas quando negativo) se divide entre
+       "Não veio/Faltando" explicitamente sinalizado e "não reconciliado" (sobra sem explicação
+       — tipicamente carga ainda não conferida). Recebido-OK + as 5 fatias somam exatamente as
+       caixas previstas, por isso o gráfico sempre fecha em 100%.
+   "Excesso recebido" fica de fora: são caixas ALÉM do previsto, não uma fatia do total. */
+function computePeriodBreakdown(){
+  const cargas = filteredCargas();
+  let cxPrevista=0, recebidoOk=0, avariaSlice=0, reembalarSlice=0, naoVeioSlice=0, quarentenaSlice=0, naoReconciliadoSlice=0;
+  cargas.forEach(c=> c.items.forEach(it=>{
+    const prevista = it.qtdCx||0;
+    cxPrevista += prevista;
+    const divergencia = it.divergencia||0;
+    const shortfall = Math.max(0, -divergencia);
+    const received = prevista - shortfall; // parte do previsto que efetivamente chegou
+
+    const qualidade = (it.avariaDescarte||0)+(it.reembalar||0)+(it.quarentena||0);
+    const effQualidade = Math.min(qualidade, received);
+    if(qualidade>0){
+      avariaSlice     += (it.avariaDescarte||0)/qualidade*effQualidade;
+      reembalarSlice  += (it.reembalar||0)/qualidade*effQualidade;
+      quarentenaSlice += (it.quarentena||0)/qualidade*effQualidade;
+    }
+    recebidoOk += received - effQualidade;
+
+    const effNaoVeio = Math.min(it.naoVeio||0, shortfall);
+    naoVeioSlice += effNaoVeio;
+    naoReconciliadoSlice += shortfall - effNaoVeio;
+  }));
+  const totalFalta = naoVeioSlice+naoReconciliadoSlice;
+  return { cxPrevista, recebidoOk, avariaSlice, reembalarSlice, naoVeioSlice, quarentenaSlice, naoReconciliadoSlice, totalFalta };
+}
+
+function computeDepKPIs(key){
+  const rows = itemsForDep(key);
+  const totalCx = rows.reduce((s,r)=>s+(r.qtdCx||0),0);
+  const enderecos = new Set(rows.map(r=>r.endereco));
+  const skus = new Set(rows.map(r=>r.sku));
+  const pctDoEstoque = state.data.estoque.length ? (totalCx / state.data.estoque.reduce((s,r)=>s+(r.qtdCx||0),0) * 100) : 0;
+  // zonas a granel (Quarentena/Reembalar/Avariar) não têm endereço por rack — cada linha de
+  // estoque nessas áreas representa fisicamente 1 palete
+  const paletesEstimados = key==='cd13' ? null : rows.length;
+
+  // occurrences from cargas matching this deposit's "tipo"
+  const tipoMap = {quarentena:'quarentena', reembalar:'reembalar', descarte:'descarte', cd13:null};
+  let cargaQtd = 0;
+  if(tipoMap[key]){
+    filteredCargas().forEach(c=> c.items.forEach(it=>{
+      classifyItem(it).forEach(e=>{
+        if(e.tipo===tipoMap[key]) cargaQtd += e.qtd;
+        if(key==='descarte' && e.tipo==='naoveio') cargaQtd += e.qtd;
+      });
+    }));
+  }
+  return { totalCx, posicoes: enderecos.size, skus: skus.size, pctDoEstoque, cargaQtd, paletesEstimados };
+}
+
+function categoryBreakdown(rows){
+  const map = {};
+  rows.forEach(r=>{
+    const c = normCat(r.categoria);
+    map[c] = (map[c]||0) + (r.qtdCx||0);
+  });
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+
+/* ============ SVG CHART HELPERS ============ */
+function svgEl(tag, attrs){
+  let s = `<${tag}`;
+  for(const k in attrs) s += ` ${k}="${attrs[k]}"`;
+  return s + '/>';
+}
+function barChartH(data, opts){
+  // data: [{label, value}], horizontal bars
+  opts = opts||{};
+  const w = opts.width||520, barH=22, gap=10, padL=opts.padL||150, padR=54, padT=6;
+  const max = Math.max(1, ...data.map(d=>d.value));
+  const h = padT + data.length*(barH+gap);
+  let bars = '';
+  data.forEach((d,i)=>{
+    const y = padT + i*(barH+gap);
+    const bw = Math.max(2,(w-padL-padR) * d.value/max);
+    bars += `<text x="${padL-10}" y="${y+barH/2+4}" text-anchor="end" class="bar-label">${esc(d.label)}</text>`;
+    bars += `<rect x="${padL}" y="${y}" width="${bw}" height="${barH}" rx="5" fill="${d.color||'var(--brand)'}" opacity="0.92"/>`;
+    bars += `<text x="${padL+bw+8}" y="${y+barH/2+4}" class="bar-value">${fmtInt(d.value)}</text>`;
+  });
+  return `<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">${bars}</svg></div>`;
+}
+function lineChart(data, opts){
+  // data: [{label, value}]
+  opts = opts||{};
+  const w = opts.width||620, h = opts.height||220, padL=44, padR=18, padT=18, padB=30;
+  const max = Math.max(1, ...data.map(d=>d.value)) * 1.15;
+  const innerW = w-padL-padR, innerH = h-padT-padB;
+  const stepX = data.length>1 ? innerW/(data.length-1) : 0;
+  const pts = data.map((d,i)=>({
+    x: padL + i*stepX,
+    y: padT + innerH - (d.value/max)*innerH,
+    ...d
+  }));
+  const path = pts.map((p,i)=> (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
+  const area = path + ` L${pts[pts.length-1].x.toFixed(1)},${padT+innerH} L${pts[0].x.toFixed(1)},${padT+innerH} Z`;
+  let grid = '';
+  for(let i=0;i<=3;i++){
+    const y = padT + innerH*i/3;
+    grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="gridline"/>`;
+    grid += `<text x="${padL-8}" y="${y+3}" text-anchor="end" class="axis-label">${fmtPct(max*(1-i/3))}</text>`;
+  }
+  let dots = pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--descarte)" stroke="#fff" stroke-width="1.5"/>
+    <text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)-11}" text-anchor="middle" class="bar-value">${fmtPct(p.value)}</text>
+    <text x="${p.x.toFixed(1)}" y="${h-8}" text-anchor="middle" class="axis-label">${esc(p.label)}</text>`).join('');
+  return `<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+    ${grid}
+    <path d="${area}" fill="var(--descarte)" opacity="0.08"/>
+    <path d="${path}" fill="none" stroke="var(--descarte)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+  </svg></div>`;
+}
+function donut(pct, color, size){
+  size = size||96;
+  const r = size/2-9, c = 2*Math.PI*r, cx=size/2, cy=size/2;
+  const off = c*(1-Math.min(100,Math.max(0,pct))/100);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>
+    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="16" fill="var(--ink)">${Math.round(pct)}%</text>
+  </svg>`;
+}
+function pieSlicePoint(cx,cy,r,angleDeg){
+  const rad = (angleDeg-90) * Math.PI/180;
+  return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
+}
+function pieChart(slices, opts){
+  opts = opts||{};
+  const size = opts.size||168, r = size/2, cx=r, cy=r;
+  const total = slices.reduce((s,d)=>s+d.value,0);
+  if(!total) return `<div class="card-sub">Sem dados para exibir.</div>`;
+  let cum = 0, paths = '';
+  slices.filter(s=>s.value>0).forEach(s=>{
+    const startAngle = cum/total*360;
+    cum += s.value;
+    const endAngle = cum/total*360;
+    const p1 = pieSlicePoint(cx,cy,r,startAngle);
+    const p2 = pieSlicePoint(cx,cy,r,endAngle);
+    const large = (endAngle-startAngle) > 180 ? 1 : 0;
+    const pct = (s.value/total*100);
+    paths += `<path d="M${cx},${cy} L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${r},${r} 0 ${large} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z"
+      fill="${s.color}" stroke="var(--surface)" stroke-width="1.5"><title>${esc(s.label)}: ${fmtInt(s.value)} cx (${pct.toFixed(1)}%)</title></path>`;
+  });
+  const legend = slices.filter(s=>s.value>0).map(s=>{
+    const pct = (s.value/total*100);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;">
+      <span style="display:flex;align-items:center;gap:7px;min-width:0;">
+        <span style="width:9px;height:9px;border-radius:50%;background:${s.color};flex:none;"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s.label)}</span>
+      </span>
+      <span class="mono" style="flex:none;color:var(--ink-soft);">${fmtInt(s.value)} cx · ${pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none;">${paths}</svg>
+    <div style="flex:1;min-width:180px;">${legend}</div>
+  </div>`;
+}
+
+/* ============ RENDER: KPI STRIP ============ */
+function iconSvg(name){
+  const icons = {
+    box:'<path d="M3 8l9-5 9 5-9 5-9-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8M12 13v8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+    truck:'<path d="M2 7h11v9H2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 10h4l3 3v3h-7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="6" cy="18" r="1.6" stroke="currentColor" stroke-width="1.7"/><circle cx="16.5" cy="18" r="1.6" stroke="currentColor" stroke-width="1.7"/>',
+    check:'<path d="M4 12l6 6L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    alert:'<path d="M12 3l10 18H2L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+    target:'<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>',
+    layers:'<path d="M12 3l9 5-9 5-9-5 9-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 13l9 5 9-5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+    pallet:'<rect x="3" y="14" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M5 18v2M9 18v2M15 18v2M19 18v2" stroke="currentColor" stroke-width="1.6"/><rect x="6" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.6"/>',
+    flask:'<path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 006.2 21h11.6a2 2 0 001.7-3L14 9V3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+    repack:'<path d="M4 4h9v9H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M11 11l9 9M20 11v9h-9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+    trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  };
+  return icons[name]||icons.box;
+}
+function kpiCard(label, value, sub, icon, colorVar, i){
+  return `<div class="kpi-card" style="animation-delay:${i*0.04}s">
+    <div class="kpi-top">
+      <span class="kpi-label">${label}</span>
+      <span class="kpi-ico" style="background:color-mix(in srgb, ${colorVar} 16%, white);color:${colorVar}"><svg viewBox="0 0 24 24" fill="none">${iconSvg(icon)}</svg></span>
+    </div>
+    <div class="kpi-value">${value}</div>
+    <div class="kpi-sub">${sub}</div>
+  </div>`;
+}
+function renderKPIs(){
+  const k = computeGlobalKPIs();
+  const html = [
+    kpiCard('Cargas no período', fmtInt(k.cargasCount), `${filteredCargas().reduce((s,c)=>s+c.items.length,0)} itens movimentados`, 'truck', 'var(--brand)', 0),
+    kpiCard('% avarias no período', fmtPct(k.pctAvarias), `${fmtInt(k.avarias)} cx avariadas de ${fmtInt(k.cxPrevista)} cx carregadas`, 'alert', 'var(--descarte)', 1),
+    kpiCard('Estoque real (faturável)', fmtInt(k.saldoReal), `Saldo atual em ${fmtInt(k.saldoRealPosicoes)} endereços do CD13 — não inclui quarentena/reembalar/descarte`, 'layers', 'var(--cd13)', 2),
+    kpiCard('Acuracidade da conferência', fmtPct(k.acuracidade), `Base: ${fmtInt(k.cxPrevista)} cx previstas no período`, 'target', 'var(--reembalar)', 3),
+    kpiCard('Caixas conferidas', fmtInt(k.cxConferida), `Total recebido nas cargas do período · ${fmtInt(k.excesso)} cx de excesso encontradas`, 'check', 'var(--ok)', 4),
+    kpiCard('Paletes no parque', fmtInt(k.paletes.total), `${fmtInt(k.paletes.emUso)} em uso · ${fmtInt(k.paletes.vaziosBons+k.paletes.vaziosDanificados)} vazios`, 'pallet', 'var(--quarentena)', 5),
+  ].join('');
+  document.getElementById('kpi-grid').innerHTML = html;
+  document.getElementById('pill-cargas').textContent = `${state.data.cargas.length} cargas registradas`;
+  document.getElementById('pill-posicoes').textContent = `${state.data.estoque.length} posições de estoque · ${fmtInt(k.totalCxEstoque)} cx no total`;
+}
+
+/* ============ RENDER: TABS ============ */
+function renderTabs(){
+  const sapConf = computeSapConfronto();
+  const counts = {
+    geral:'', cd13:itemsForDep('cd13').length, quarentena:itemsForDep('quarentena').length,
+    reembalar:itemsForDep('reembalar').length, descarte:itemsForDep('descarte').length, cargas:state.data.cargas.length,
+    validade: state.data.estoque.filter(r=>r.validade).length,
+    divergencia: filteredCargas().reduce((s,c)=>s+c.items.filter(it=>(it.divergencia||0)!==0).length,0),
+    sap: sapConf.porSku.filter(s=>!s.ok).length
+  };
+  document.getElementById('tabbar').innerHTML = TAB_ORDER.map(key=>{
+    const active = state.tab===key ? 'active':'';
+    const color = TAB_COLOR[key]==='brand' ? 'var(--brand)' : `var(--${TAB_COLOR[key]})`;
+    const countHtml = counts[key]!=='' ? `<span class="count">${counts[key]}</span>` : '';
+    return `<button class="tabbtn ${active}" data-tab="${key}">
+      <span class="dot" style="background:${color}"></span>${TAB_LABEL[key]}${countHtml}
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.tabbtn').forEach(b=>{
+    b.addEventListener('click', ()=>{ state.tab=b.dataset.tab; state.addressFilter=null; renderAll(); });
+  });
+}
+
+/* ============ RENDER: TABLE ============ */
+function stockTable(rows, opts){
+  opts = opts||{};
+  const filtered = rows.filter(r=>matchesSearch(r) && matchesCategoria(r) && (!state.addressFilter || r.endereco===state.addressFilter));
+  const showAddr = opts.showAddr!==false;
+  let body = filtered.map(r=>{
+    const vs = validadeStatus(r.validade);
+    return `
+    <tr>
+      ${showAddr?`<td><span class="addr-chip">${esc(r.endereco)}</span></td>`:''}
+      <td class="mono">${r.sku}</td>
+      <td class="desc-cell"><b>${esc(r.descricao)}</b><span class="meta">${esc(normCat(r.categoria))} · ${esc(r.volume||'')} · ${esc(r.marca||'')}</span></td>
+      <td class="mono">${esc(r.lote)}</td>
+      <td class="num">${fmtInt(r.qtdCx)}</td>
+      <td>${r.validade?`<span class="occ-tag ${vs.cls}">${fmtDate(r.validade)}</span>`:'<span class="meta">—</span>'}</td>
+    </tr>`;}).join('');
+  if(!filtered.length) body = `<tr class="empty-row"><td colspan="6">Nenhum item encontrado para os filtros atuais.</td></tr>`;
+  return `<div class="table-scroll"><table>
+    <thead><tr>
+      ${showAddr?'<th>Endereço</th>':''}
+      <th>SKU</th><th>Descrição</th><th>Lote</th><th style="text-align:right">Cx</th><th>Validade</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table></div>
+  <div class="card-sub" style="margin-top:10px;margin-bottom:0;">${filtered.length} de ${rows.length} posições exibidas ${state.addressFilter?`· endereço <b>${esc(state.addressFilter)}</b> selecionado (<a href="#" id="clear-addr" style="color:var(--brand)">limpar</a>)`:''}</div>`;
+}
+
+/* ============ RENDER: RACK MAP (signature) ============ */
+function buildRackMap(){
+  const rows = itemsForDep('cd13');
+  const byAddr = {};
+  rows.forEach(r=>{
+    if(!byAddr[r.endereco]) byAddr[r.endereco] = {endereco:r.endereco, cx:0, items:[]};
+    byAddr[r.endereco].cx += r.qtdCx||0;
+    byAddr[r.endereco].items.push(r);
+  });
+  const maxCx = Math.max(1, ...Object.values(byAddr).map(a=>a.cx));
+
+  // descobre as ruas/corredores (prefixo de letras) e os números usados em cada uma,
+  // direto dos endereços cadastrados — não fica preso a uma lista fixa (A/B/C/PJ),
+  // então uma rua nova (ex.: D) aparece automaticamente assim que tiver estoque.
+  const rowMap = {};
+  Object.keys(byAddr).forEach(addr=>{
+    const m = String(addr).match(/^([A-Za-zÀ-ÿ]+)\s*0*(\d+)$/);
+    if(!m) return;
+    const label = m[1].toUpperCase();
+    const num = parseInt(m[2],10);
+    if(!rowMap[label]) rowMap[label] = new Set();
+    rowMap[label].add(num);
+  });
+  const labels = Object.keys(rowMap);
+  // ruas de armazenagem (1 letra) primeiro, em ordem alfabética; ruas especiais
+  // (ex.: PJ de picking) depois, também em ordem alfabética
+  labels.sort((a,b)=>{
+    if(a.length!==b.length) return a.length-b.length;
+    return a.localeCompare(b);
+  });
+  const maxCol = Math.max(36, ...labels.map(l=>Math.max(...rowMap[l])));
+
+  let rowsHtml = labels.map(label=>{
+    const nums = rowMap[label];
+    const cells = Array.from({length:maxCol},(_,i)=>i+1).map(n=>{
+      if(!nums.has(n)) return `<div class="cell empty"></div>`;
+      const addr = label + String(n).padStart(2,'0');
+      const info = byAddr[addr];
+      if(!info) return `<div class="cell empty" title="${addr} — livre"></div>`;
+      const intensity = 0.22 + 0.78*(info.cx/maxCx);
+      const match = state.search && (String(info.items[0].sku).includes(state.search.toLowerCase()) || info.items.some(it=>it.descricao.toLowerCase().includes(state.search.toLowerCase())) || addr.toLowerCase().includes(state.search.toLowerCase()));
+      const dimClass = state.search && !match ? 'style="opacity:.25"' : '';
+      const selected = state.addressFilter===addr ? 'selected' : '';
+      const first = info.items[0];
+      const tip = info.items.length>1
+        ? `${info.items.length} SKUs · ${fmtInt(info.cx)} cx`
+        : `<b>${first.sku}</b> · ${fmtInt(info.cx)} cx<br>${esc(first.descricao.slice(0,34))}`;
+      return `<div class="cell active ${selected}" data-addr="${addr}" ${dimClass}
+        style="background:color-mix(in srgb, var(--cd13) ${Math.round(intensity*100)}%, white)">
+        <div class="cell-tip"><b>${addr}</b><br>${tip}</div>
+      </div>`;
+    }).join('');
+    return `<div class="rack-row"><div class="rack-row-label">${label}</div><div class="rack-cells" style="grid-template-columns:repeat(${maxCol},minmax(0,1fr));">${cells}</div></div>`;
+  }).join('');
+
+  if(!labels.length){
+    return `<div class="card-sub">Nenhum endereço reconhecido no formato letra+número (ex.: A01) para desenhar o mapa.</div>`;
+  }
+
+  return `<div class="rackmap-legend">
+      <span>Mapa físico do CD13 — cada célula é um endereço de rack. Ruas detectadas automaticamente a partir dos endereços cadastrados. Intensidade = volume de caixas.</span>
+      <span class="legend-scale">
+        <span style="background:color-mix(in srgb, var(--cd13) 25%, white)"></span>
+        <span style="background:color-mix(in srgb, var(--cd13) 55%, white)"></span>
+        <span style="background:var(--cd13)"></span>
+      </span>
+      <span>menos → mais caixas</span>
+    </div>
+    <div class="rackmap">${rowsHtml}</div>`;
+}
+
+/* ============ RENDER: DEPOSIT PANEL ============ */
+function renderDepPanel(key){
+  const def = DEP_GROUPS[key];
+  const rows = itemsForDep(key);
+  const kp = computeDepKPIs(key);
+  const cats = categoryBreakdown(rows).slice(0,7);
+  const chartColors = {cd13:'var(--cd13)', quarentena:'var(--quarentena)', reembalar:'var(--reembalar)', descarte:'var(--descarte)'};
+  const barData = cats.map(([label,value])=>({label: label.length>22?label.slice(0,20)+'…':label, value, color:chartColors[key]}));
+
+  const miniKpis = [
+    `<div class="mini-kpi"><div class="l">Posições ocupadas</div><div class="v">${fmtInt(kp.posicoes)}</div></div>`,
+    `<div class="mini-kpi"><div class="l">Caixas armazenadas</div><div class="v">${fmtInt(kp.totalCx)}</div></div>`,
+  ];
+  if(key==='cd13'){
+    miniKpis.push(`<div class="mini-kpi"><div class="l">Paletes em uso (parque)</div><div class="v">${fmtInt(state.data.paletesResumo.emUso)}</div></div>`);
+  } else {
+    miniKpis.push(`<div class="mini-kpi"><div class="l">Paletes estimados <span title="1 palete por linha de estoque">(1 por linha)</span></div><div class="v">${fmtInt(kp.paletesEstimados)}</div></div>`);
+  }
+  if(key==='quarentena') miniKpis.push(`<div class="mini-kpi"><div class="l">% do estoque total</div><div class="v">${fmtPct(kp.pctDoEstoque)}</div></div>`,
+                                        `<div class="mini-kpi"><div class="l">Sinalizado nas conferências</div><div class="v soft-quarentena" style="display:inline-block;padding:2px 8px;border-radius:6px;">+${fmtInt(kp.cargaQtd)} cx</div></div>`);
+  if(key==='reembalar')  miniKpis.push(`<div class="mini-kpi"><div class="l">Identificado nas conferências</div><div class="v acc-reembalar">+${fmtInt(kp.cargaQtd)} cx</div></div>`);
+  if(key==='descarte')   miniKpis.push(`<div class="mini-kpi"><div class="l">Perdas identificadas nas conferências</div><div class="v acc-descarte">+${fmtInt(kp.cargaQtd)} cx</div></div>`);
+
+  const quarentenaNote = key==='quarentena' ? `<div class="card-sub" style="margin:-8px 0 14px;">📍 Fisicamente é <b>uma única posição</b> no armazém — o painel estima <b>1 palete por linha</b> de lote/SKU alocada ali.</div>` : '';
+
+  const rackSection = key==='cd13' ? `
+    <div class="card">
+      <div class="card-head"><h3>Mapa de racks — corredores de armazenagem e picking (PJ)</h3></div>
+      <div class="card-sub">Clique em uma célula para filtrar a tabela pelo endereço.</div>
+      ${buildRackMap()}
+    </div>` : '';
+
+  return `
+    <div class="dep-hero bg-${def.color}">
+      <div>
+        <h2>${def.nome} ${key==='cd13'?'<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:999px;vertical-align:middle;margin-left:6px;">SALDO FATURÁVEL</span>':'<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.16);padding:3px 10px;border-radius:999px;vertical-align:middle;margin-left:6px;">FORA DO SALDO FATURÁVEL</span>'}</h2>
+        <p>${def.desc}</p>
+      </div>
+      <div class="dep-hero-stats">
+        <div class="dep-hero-stat"><b>${fmtInt(kp.posicoes)}</b><span>Posições</span></div>
+        <div class="dep-hero-stat"><b>${fmtInt(kp.totalCx)}</b><span>Caixas</span></div>
+        <div class="dep-hero-stat"><b>${fmtInt(kp.skus)}</b><span>SKUs distintos</span></div>
+      </div>
+    </div>
+
+    ${quarentenaNote}
+    <div class="mini-kpis">
+      ${miniKpis.join('')}
+    </div>
+
+    ${rackSection}
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Posições em ${def.label}</h3></div>
+        <div class="card-sub">${fmtInt(rows.length)} linhas de estoque nesta área.</div>
+        <div id="table-${key}">${stockTable(rows)}</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Caixas por categoria</h3></div>
+        <div class="card-sub">Distribuição do volume armazenado nesta área.</div>
+        ${barData.length ? barChartH(barData,{width:400}) : '<div class="card-sub">Sem itens nesta área.</div>'}
+      </div>
+    </div>
+  `;
+}
+
+/* ============ RENDER: VISÃO GERAL ============ */
+function renderGeral(){
+  const k = computeGlobalKPIs();
+  const cargas = filteredCargas();
+
+  // % avarias por carga
+  const avariaLine = cargas.map(c=>{
+    let prev=0, avar=0;
+    c.items.forEach(it=>{
+      prev += it.qtdCx||0;
+      classifyItem(it).forEach(e=>{ if(e.tipo==='descarte'||e.tipo==='naoveio') avar+=e.qtd; });
+    });
+    return {label: c.data.split('-').reverse().slice(0,2).join('/'), value: prev? avar/prev*100 : 0};
+  });
+
+  // SKUs com mais avarias
+  const skuMap = {};
+  cargas.forEach(c=>c.items.forEach(it=>{
+    classifyItem(it).forEach(e=>{
+      if(e.tipo==='descarte'||e.tipo==='naoveio'){
+        skuMap[it.sku] = (skuMap[it.sku]||0) + e.qtd;
+      }
+    });
+  }));
+  const topSkus = Object.entries(skuMap).sort((a,b)=>b[1]-a[1]).slice(0,7)
+    .map(([sku,value])=>({label:sku, value, color:'var(--descarte)'}));
+
+  // stock by deposit
+  const depTotals = TAB_ORDER.filter(k=>DEP_GROUPS[k]).map(key=>{
+    const rows = itemsForDep(key);
+    return {key, label:DEP_GROUPS[key].label, cx: rows.reduce((s,r)=>s+(r.qtdCx||0),0), color:`var(--${DEP_GROUPS[key].color})`};
+  });
+  const maxDep = Math.max(1,...depTotals.map(d=>d.cx));
+
+  return `
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>% de avarias por dia de carga</h3></div>
+        <div class="card-sub">Percentual sobre as caixas previstas de cada carga (descarte + não veio).</div>
+        ${avariaLine.length ? lineChart(avariaLine) : '<div class="card-sub">Nenhuma carga no período selecionado.</div>'}
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>SKUs com mais avarias</h3></div>
+        <div class="card-sub">Caixas faltantes/descartadas por SKU na conferência.</div>
+        ${topSkus.length ? barChartH(topSkus,{width:400}) : '<div class="card-sub">Sem avarias no período.</div>'}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Estoque por depósito</h3></div>
+      <div class="card-sub">Caixas armazenadas em cada uma das quatro áreas. Apenas o <b class="acc-cd13">CD13</b> compõe o saldo real/faturável — as demais áreas ficam fora do estoque vendável.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px;">
+        ${depTotals.map(d=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:5px;">
+              <span style="display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:600;color:${d.color}">${d.label}</span>
+                <span class="tag" style="background:${d.key==='cd13'?'var(--ok-soft)':'var(--surface-soft)'};color:${d.key==='cd13'?'#166B44':'var(--ink-faint)'};">${d.key==='cd13'?'Faturável':'Não faturável'}</span>
+              </span>
+              <span class="mono">${fmtInt(d.cx)} cx</span>
+            </div>
+            <div style="height:10px;border-radius:6px;background:var(--surface-soft);overflow:hidden;">
+              <div style="height:100%;width:${(d.cx/maxDep*100).toFixed(1)}%;background:${d.color};border-radius:6px;"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Ocupação do parque de paletes</h3></div>
+        <div class="card-sub">Situação consolidada dos paletes no CD13.</div>
+        <div style="display:flex;align-items:center;gap:22px;">
+          ${donut(k.paletes.total ? k.paletes.emUso/k.paletes.total*100 : 0, 'var(--brand)', 108)}
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
+            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--brand);margin-right:7px;"></span>Em uso (estoque) — <b>${fmtInt(k.paletes.emUso)}</b></div>
+            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:7px;"></span>Vazios bons — <b>${fmtInt(k.paletes.vaziosBons)}</b></div>
+            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--descarte);margin-right:7px;"></span>Vazios danificados — <b>${fmtInt(k.paletes.vaziosDanificados)}</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Resumo do período</h3></div>
+        <div class="card-sub">Como as ${fmtInt(k.cxPrevista)} caixas previstas se dividiram na conferência. Avaria e Reembalar são qualidade do que <b>chegou</b> — não expliquem a diferença entre previstas e conferidas por conta própria; essa diferença vem principalmente de cargas ainda não conferidas ("não reconciliado" abaixo).</div>
+        ${(()=>{ const b = computePeriodBreakdown(); const slices = [
+            {label:'Recebido OK', value:b.recebidoOk, color:'var(--ok)'},
+            {label:'Avaria/Descarte', value:b.avariaSlice, color:'var(--descarte)'},
+            {label:'Reembalar', value:b.reembalarSlice, color:'var(--reembalar)'},
+            {label:'Não veio/Faltando', value:b.naoVeioSlice, color:'var(--quarentena)'},
+            {label:'Quarentena', value:b.quarentenaSlice, color:'var(--cd13)'},
+            {label:'Não reconciliado (não conferido)', value:b.naoReconciliadoSlice, color:'#C7CCD6'},
+          ]; return pieChart(slices,{size:168}); })()}
+        <div class="card-sub" style="margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line-soft);">
+          <b class="acc-ok">+${fmtInt(k.excesso)} cx de excesso recebido</b> no período — caixas recebidas além do previsto, não entram no gráfico acima porque não são parte das ${fmtInt(k.cxPrevista)} cx previstas.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============ ABA: VALIDADE ============ */
+function renderValidadeTab(){
+  const rows = state.data.estoque;
+  const comData = rows.filter(r=>r.validade);
+  const semData = rows.filter(r=>!r.validade);
+  const tally = {vencido:0, critico:0, atencao:0, ok:0};
+  comData.forEach(r=>{
+    const vs = validadeStatus(r.validade);
+    if(vs.tag==='Vencido') tally.vencido++;
+    else if(vs.tag==='Crítico') tally.critico++;
+    else if(vs.tag==='Atenção') tally.atencao++;
+    else tally.ok++;
+  });
+  return `
+    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
+      <div>
+        <h2>Ranking de validade</h2>
+        <p>Todas as ${fmtInt(comData.length)} posições com validade cadastrada, ordenadas da mais próxima de vencer para a mais distante (FEFO — primeiro a vencer, primeiro a sair).${semData.length?` ${fmtInt(semData.length)} posições sem validade informada não entram no ranking.`:''}</p>
+      </div>
+      <div class="dep-hero-stats">
+        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(tally.vencido+tally.critico)}</b><span>Vencidos/críticos</span></div>
+        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(tally.atencao)}</b><span>Atenção</span></div>
+        <div class="dep-hero-stat"><b style="color:#8FE0B3">${fmtInt(tally.ok)}</b><span>OK</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Todas as posições, por proximidade de vencimento</h3></div>
+      <div class="card-sub">Use a busca no topo para filtrar por SKU, descrição ou endereço.</div>
+      ${validadeRankingTable(rows, null)}
+    </div>
+  `;
+}
+function validadeRankingTable(rows, limit){
+  const searchFiltered = rows.filter(matchesSearch).filter(matchesCategoria);
+  const comData = searchFiltered.filter(r=>r.validade).slice().sort((a,b)=> a.validade < b.validade ? -1 : a.validade > b.validade ? 1 : 0);
+  const semData = searchFiltered.filter(r=>!r.validade);
+  const shown = limit ? comData.slice(0, limit) : comData;
+  let body = shown.map(r=>{
+    const vs = validadeStatus(r.validade);
+    const diasTxt = vs.d==null?'—': vs.d<0 ? `${Math.abs(vs.d)} dias atrás` : `em ${fmtInt(vs.d)} dias`;
+    return `<tr>
+      <td class="mono">${r.sku}</td>
+      <td class="desc-cell"><b>${esc(r.descricao)}</b><span class="meta">${esc(r.lote)} · ${esc(r.endereco)}</span></td>
+      <td><span class="tag soft-${DEP_GROUPS_BY_RAW(r.deposito)}">${esc(r.deposito)}</span></td>
+      <td class="num">${fmtInt(r.qtdCx)}</td>
+      <td class="mono">${fmtDate(r.validade)}</td>
+      <td><span class="occ-tag ${vs.cls}">${vs.tag} · ${diasTxt}</span></td>
+    </tr>`;
+  }).join('');
+  if(!shown.length) body = `<tr class="empty-row"><td colspan="6">Nenhuma posição encontrada para os filtros atuais.</td></tr>`;
+  const foot = (limit && comData.length>limit) ? `<div class="card-sub" style="margin:10px 0 0;">Mostrando os ${limit} vencimentos mais próximos de ${comData.length} posições com validade${semData.length?` · ${semData.length} sem validade informada`:''}.</div>` : (semData.length ? `<div class="card-sub" style="margin:10px 0 0;">${comData.length} posições com validade · ${semData.length} sem validade informada.</div>` : '');
+  return `<div class="table-scroll" style="max-height:560px;"><table>
+    <thead><tr><th>SKU</th><th>Descrição</th><th>Depósito</th><th style="text-align:right">Cx</th><th>Validade</th><th>Status</th></tr></thead>
+    <tbody>${body}</tbody></table></div>${foot}`;
+}
+function DEP_GROUPS_BY_RAW(dep){
+  const nd = normDep(dep);
+  for(const k in DEP_GROUPS){ if(DEP_GROUPS[k].deps.map(normDep).includes(nd)) return DEP_GROUPS[k].color; }
+  return 'quarentena';
+}
+
+/* ============ ABA: DIVERGÊNCIA (QTD) ============ */
+function renderDivergenciaTab(){
+  const cargas = filteredCargas();
+  let allItems = [];
+  cargas.forEach(c=> c.items.forEach(it=> { if((it.divergencia||0)!==0) allItems.push({...it, cargaId:c.id, cargaTitulo:c.titulo}); }));
+  const searchFiltered = allItems.filter(matchesSearch).filter(matchesCategoria);
+  searchFiltered.sort((a,b)=> Math.abs(b.divergencia) - Math.abs(a.divergencia));
+
+  const totalFaltando = allItems.filter(it=>it.divergencia<0).reduce((s,it)=>s+Math.abs(it.divergencia),0);
+  const totalSobrando = allItems.filter(it=>it.divergencia>0).reduce((s,it)=>s+it.divergencia,0);
+  const naoReconciliadas = allItems.filter(it=>!itemReconciles(it)).length;
+
+  let body = searchFiltered.map(it=>{
+    const divClass = it.divergencia<0 ? 'occ-bad' : 'acc-ok';
+    const warn = !itemReconciles(it);
+    return `<tr>
+      <td><span class="tag" style="background:var(--surface-soft);color:var(--ink-soft);">${esc(it.cargaId)}</span></td>
+      <td class="mono">${it.sku}</td>
+      <td class="desc-cell"><b>${esc(it.descricao)}</b><span class="meta">${esc(normCat(it.categoria))}</span></td>
+      <td class="num">${fmtInt(it.qtdCx)}</td>
+      <td class="num">${fmtInt(it.qtdConferida)}</td>
+      <td class="num ${divClass}">${it.divergencia>0?'+':''}${fmtInt(it.divergencia)}</td>
+      <td class="num">${it.avariaDescarte?fmtInt(it.avariaDescarte):'—'}</td>
+      <td class="num">${it.reembalar?fmtInt(it.reembalar):'—'}</td>
+      <td>${warn?'<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;">⚠ não reconcilia</span>':'<span class="occ-tag soft-ok">OK</span>'}</td>
+    </tr>`;
+  }).join('');
+  if(!body) body = `<tr class="empty-row"><td colspan="9">Nenhuma divergência encontrada para os filtros atuais.</td></tr>`;
+
+  return `
+    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
+      <div>
+        <h2>Divergência de quantidade</h2>
+        <p>Todas as linhas de conferência onde a quantidade recebida difere da prevista, somando as ${fmtInt(cargas.length)} cargas do período selecionado.</p>
+      </div>
+      <div class="dep-hero-stats">
+        <div class="dep-hero-stat"><b style="color:#FF9E92">-${fmtInt(totalFaltando)}</b><span>Cx faltando</span></div>
+        <div class="dep-hero-stat"><b style="color:#8FE0B3">+${fmtInt(totalSobrando)}</b><span>Cx sobrando</span></div>
+        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(naoReconciliadas)}</b><span>Não reconciliadas</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Linhas com divergência</h3></div>
+      <div class="card-sub">Ordenado pela maior diferença absoluta. Avaria e Reembalar aparecem aqui só como referência — são itens que chegaram, não a causa da divergência. "Não reconcilia" indica que não há registro de "Não veio/Faltando" cobrindo essa diferença de quantidade — geralmente carga ainda não conferida.</div>
+      <div class="table-scroll" style="max-height:560px;"><table>
+        <thead><tr><th>Carga</th><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx prevista</th><th style="text-align:right">Cx conferida</th><th style="text-align:right">Divergência</th><th style="text-align:right">Avaria</th><th style="text-align:right">Reembalar</th><th>Status</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+/* ============ ABA: CONFRONTO SAP ============ */
+function renderSapTab(){
+  const { porLote, porSku } = computeSapConfronto();
+
+  const skuOk = porSku.filter(s=>s.ok).length;
+  const skuDivReal = porSku.filter(s=>!s.ok).length;
+  const loteSemSap = porLote.filter(l=>l.status==='sem_sap').length;
+  const loteSemWms = porLote.filter(l=>l.status==='sem_wms').length;
+  const loteSoLote = porLote.filter(l=>l.soLote).length;
+
+  // --- tabela por SKU (resumo, o que importa para saldo/faturamento) ---
+  const skuFiltered = porSku.filter(s => !state.search || String(s.sku).includes(state.search.toLowerCase()) || (s.descricao||'').toLowerCase().includes(state.search.toLowerCase()));
+  let skuBody = skuFiltered.map(s=>`
+    <tr>
+      <td class="mono">${s.sku}</td>
+      <td class="desc-cell"><b>${esc(s.descricao)}</b></td>
+      <td class="num">${fmtInt(s.wms)}</td>
+      <td class="num">${fmtInt(s.sap)}</td>
+      <td class="num ${s.diff===0?'occ-ok':(s.diff>0?'acc-ok':'occ-bad')}">${s.diff>0?'+':''}${fmtInt(s.diff)}</td>
+      <td>${s.ok?'<span class="occ-tag soft-ok">Bate certinho</span>':'<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;">⚠ Divergência real</span>'}</td>
+    </tr>`).join('');
+  if(!skuBody) skuBody = `<tr class="empty-row"><td colspan="6">Nenhum SKU encontrado para os filtros atuais.</td></tr>`;
+
+  // --- tabela por lote (detalhe, explica a origem da divergência) ---
+  const loteFiltered = porLote.filter(l => !state.search || String(l.sku).includes(state.search.toLowerCase()) || (l.descricao||'').toLowerCase().includes(state.search.toLowerCase()) || String(l.lote||'').includes(state.search));
+  const statusLabel = {ok:['Bate certinho','soft-ok'], diverge:['Divergência de qtd','' ], sem_sap:['Sem lastro no SAP','soft-descarte'], sem_wms:['Sem localização física','soft-quarentena']};
+  let loteBody = loteFiltered.map(l=>{
+    const [txt,cls] = statusLabel[l.status];
+    const clsFinal = l.status==='diverge' ? (l.soLote?'soft-quarentena':'soft-descarte') : cls;
+    const txtFinal = l.status==='diverge' ? (l.soLote? 'Só o lote diverge (total OK)' : 'Divergência real') : txt;
+    return `<tr>
+      <td class="mono">${l.sku}</td>
+      <td class="desc-cell"><b>${esc(l.descricao)}</b></td>
+      <td class="mono">${l.lote==null||l.lote==='null'?'—':esc(l.lote)}</td>
+      <td class="num">${l.wms?fmtInt(l.wms):'—'}</td>
+      <td class="num">${l.sap?fmtInt(l.sap):'—'}</td>
+      <td class="num ${l.diff===0?'occ-ok':(l.diff>0?'acc-ok':'occ-bad')}">${l.diff>0?'+':''}${fmtInt(l.diff)}</td>
+      <td><span class="occ-tag ${clsFinal}">${txtFinal}</span></td>
+    </tr>`;
+  }).join('');
+  if(!loteBody) loteBody = `<tr class="empty-row"><td colspan="7">Nenhum lote encontrado para os filtros atuais.</td></tr>`;
+
+  return `
+    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
+      <div>
+        <h2>Confronto SAP × Físico</h2>
+        <p>Cruzamento do estoque físico (aba Estoque) contra o saldo do SAP, por código (SKU) e por lote. "Só o lote diverge" significa que o total do SKU bate — geralmente é lote gravado errado ou lotes do SAP consolidados numa única posição física, não perda real.</p>
+      </div>
+      <div class="dep-hero-stats">
+        <div class="dep-hero-stat"><b style="color:#8FE0B3">${fmtInt(skuOk)}</b><span>SKUs OK</span></div>
+        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(skuDivReal)}</b><span>SKUs c/ divergência real</span></div>
+        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(loteSoLote)}</b><span>Só lote diverge</span></div>
+        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(loteSemSap)}</b><span>Sem lastro no SAP</span></div>
+        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(loteSemWms)}</b><span>Sem localização física</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Resumo por código (SKU)</h3></div>
+      <div class="card-sub">Este é o número que importa para saldo e faturamento: soma de todos os lotes do SKU, físico contra SAP. Ordenado pela maior diferença absoluta.</div>
+      <div class="table-scroll" style="max-height:420px;"><table>
+        <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Físico (WMS)</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
+        <tbody>${skuBody}</tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Detalhe por lote</h3></div>
+      <div class="card-sub">Abertura lote a lote. Use para investigar a causa de uma divergência de SKU, ou para achar lotes que o SAP mostra disponível mas não têm posição física registrada (e vice-versa).</div>
+      <div class="table-scroll" style="max-height:560px;"><table>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Lote</th><th style="text-align:right">Físico (WMS)</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
+        <tbody>${loteBody}</tbody>
+      </table></div>
+    </div>
+  `;
+}
+
+function occTagClass(tipo){
+  return {descarte:'soft-descarte', naoveio:'soft-descarte', reembalar:'soft-reembalar', quarentena:'soft-quarentena', excesso:'soft-ok', ok:'soft-ok', obs:'soft-quarentena', outro:'soft-quarentena'}[tipo]||'soft-quarentena';
+}
+function cargaConferenciaTable(c){
+  const filtered = c.items.filter(matchesSearch).filter(matchesCategoria);
+  let body = filtered.map(it=>{
+    const entries = classifyItem(it);
+    const tags = entries.filter(e=>e.tipo!=='obs').map(e=>`<span class="occ-tag ${occTagClass(e.tipo)}">${esc(e.raw||e.tipo)}</span>`).join('');
+    const obsEntry = entries.find(e=>e.tipo==='obs');
+    const obsTag = obsEntry ? `<span class="occ-tag" style="background:var(--surface-soft);color:var(--ink-soft);">${esc(obsEntry.raw)}</span>` : '';
+    const divClass = it.divergencia<0 ? 'occ-bad' : (it.divergencia>0 ? 'acc-ok' : 'occ-ok');
+    const warn = !itemReconciles(it) ? `<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;" title="Não há 'Não veio/Faltando' registrado cobrindo esta diferença de quantidade — Avaria/Reembalar não contam aqui, pois o item chegou">⚠ não reconcilia</span>` : '';
+    return `<tr>
+      <td class="mono">${it.sku}</td>
+      <td class="desc-cell"><b>${esc(it.descricao)}</b><span class="meta">${esc(normCat(it.categoria))} · ${esc(it.volume||'')}</span></td>
+      <td class="num">${fmtInt(it.qtdCx)}</td>
+      <td class="num">${fmtInt(it.qtdConferida)}</td>
+      <td class="num ${divClass}">${it.divergencia>0?'+':''}${fmtInt(it.divergencia)}</td>
+      <td>${tags || '<span class="occ-tag soft-ok">OK</span>'}${obsTag}${warn}</td>
+    </tr>`;
+  }).join('');
+  if(!filtered.length) body = `<tr class="empty-row"><td colspan="6">Nenhum item encontrado para os filtros atuais.</td></tr>`;
+  return `<div class="table-scroll" style="max-height:420px;"><table>
+    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx prevista</th><th style="text-align:right">Cx conferida</th><th style="text-align:right">Divergência</th><th>Ocorrência</th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+}
+function renderCargas(){
+  const cargas = filteredCargas();
+  if(!cargas.length) return `<div class="card"><div class="card-sub" style="text-align:center;padding:24px 0;margin:0;">Nenhuma carga no período selecionado.</div></div>`;
+  const totalMismatch = cargas.reduce((s,c)=>s+c.items.filter(it=>!itemReconciles(it)).length,0);
+  const qualityBanner = totalMismatch>0 ? `<div class="card-sub" style="margin:0 0 12px;padding:9px 13px;background:#FFF1D6;color:#8A5B14;border-radius:8px;">⚠ ${totalMismatch} linha(s) com divergência de quantidade sem registro de "Não veio/Faltando" — geralmente carga ainda não conferida (Avaria e Reembalar não contam aqui, pois o item chegou).</div>` : '';
+  return qualityBanner + cargas.map((c,i)=>{
+    let prev=0, conf=0, avar=0;
+    c.items.forEach(it=>{
+      prev += it.qtdCx||0; conf += it.qtdConferida||0;
+      classifyItem(it).forEach(e=>{ if(e.tipo==='descarte'||e.tipo==='naoveio') avar += e.qtd; });
+    });
+    const pct = prev ? (avar/prev*100) : 0;
+    const open = state.openCarga===c.id ? 'open':'';
+    return `<div class="carga-card">
+      <div class="carga-top" data-carga="${c.id}">
+        <div class="carga-id">
+          <div class="num">NF</div>
+          <div>
+            <h4>${esc(c.titulo)} · NF ${esc(c.nf)}</h4>
+            <div class="meta">${esc(c.motorista)} · veículo ${esc(c.veiculo)} · ${c.data.split('-').reverse().join('/')}</div>
+          </div>
+        </div>
+        <div class="carga-stats">
+          <div><b>${c.totalPaletesInformado}</b><span>Paletes</span></div>
+          <div><b>${c.paletesVazios}</b><span>Vazios</span></div>
+          <div><b>${fmtInt(prev)}</b><span>Cx previstas</span></div>
+          <div><b class="${pct>1?'occ-bad':'occ-ok'}">${fmtPct(pct)}</b><span>Avarias</span></div>
+        </div>
+        <svg class="chev ${open}" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="carga-body ${open}" id="carga-body-${c.id}">
+        ${cargaConferenciaTable(c)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ MASTER RENDER ============ */
+function populateCategoriaFilter(){
+  const sel = document.getElementById('f-categoria');
+  const current = sel.value;
+  const cats = new Set(state.data.estoque.map(r=>normCat(r.categoria)));
+  state.data.cargas.forEach(c=>c.items.forEach(it=>cats.add(normCat(it.categoria))));
+  sel.innerHTML = '<option value="">Todas as categorias</option>' + [...cats].sort().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = current;
+}
+
+function renderAll(){
+  renderKPIs();
+  renderTabs();
+  const panels = TAB_ORDER.map(key=>{
+    let content = '';
+    if(key==='geral') content = renderGeral();
+    else if(key==='cargas') content = renderCargas();
+    else if(key==='validade') content = renderValidadeTab();
+    else if(key==='divergencia') content = renderDivergenciaTab();
+    else if(key==='sap') content = renderSapTab();
+    else content = renderDepPanel(key);
+    return `<div class="panel ${state.tab===key?'active':''}" id="panel-${key}">${content}</div>`;
+  }).join('');
+  document.getElementById('panels').innerHTML = panels;
+  wireDynamicEvents();
+}
+
+function wireDynamicEvents(){
+  document.querySelectorAll('.cell.active').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      const addr = c.dataset.addr;
+      state.addressFilter = state.addressFilter===addr ? null : addr;
+      renderAll();
+    });
+  });
+  const clearAddr = document.getElementById('clear-addr');
+  if(clearAddr) clearAddr.addEventListener('click', (e)=>{ e.preventDefault(); state.addressFilter=null; renderAll(); });
+  document.querySelectorAll('.carga-top').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      const id = t.dataset.carga;
+      state.openCarga = state.openCarga===id ? null : id;
+      renderAll();
+    });
+  });
+}
+
+/* ============ FILTER BAR EVENTS ============ */
+document.getElementById('f-search').addEventListener('input', e=>{ state.search = e.target.value.trim(); renderAll(); });
+document.getElementById('f-categoria').addEventListener('change', e=>{ state.categoria = e.target.value; renderAll(); });
+document.getElementById('f-from').addEventListener('change', e=>{ state.from = e.target.value || null; renderAll(); });
+document.getElementById('f-to').addEventListener('change', e=>{ state.to = e.target.value || null; renderAll(); });
+document.getElementById('btn-clear').addEventListener('click', ()=>{
+  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null;
+  document.getElementById('f-search').value='';
+  document.getElementById('f-categoria').value='';
+  document.getElementById('f-from').value='';
+  document.getElementById('f-to').value='';
+  renderAll();
+});
+
+/* ============ IMPORT / EXPORT ============ */
+document.getElementById('btn-import').addEventListener('click', ()=> document.getElementById('file-input').click());
+document.getElementById('file-input').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const parsed = parseWorkbook(wb);
+    state.data = parsed;
+    state.addressFilter = null; state.openCarga = null;
+    populateCategoriaFilter();
+    renderAll();
+    toast(`Dados atualizados: ${parsed.estoque.length} posições · ${parsed.cargas.length} cargas`);
+  }catch(err){
+    console.error(err);
+    toast('Não foi possível ler essa planilha. Verifique o formato (abas "Estoque" e "Carga ...").');
+  }
+  e.target.value = '';
+});
+
+function parseWorkbook(wb){
+  const out = {estoque:[], cargas:[], paletesResumo: JSON.parse(JSON.stringify(state.data.paletesResumo))};
+  const estoqueSheetName = wb.SheetNames.find(n=>n.toLowerCase().includes('estoque'));
+  if(estoqueSheetName){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[estoqueSheetName], {header:1, raw:true});
+    const headerRow0 = rows[0]||[];
+    const findColE = (re) => headerRow0.findIndex(h => re.test(String(h||'')));
+    // colunas fixas conhecidas: SKU, DESCRICAO, CATEGORIA, VOLUME, MARCA sempre nas 5 primeiras;
+    // LOTES/VALIDADE/QTD.CX/LOCALIDADE/DEPOSITO detectados por título (VALIDADE é opcional)
+    const idxLote = findColE(/lote/i);
+    const idxValidade = findColE(/validade/i);
+    const idxQtd = findColE(/qtd\.?\s*cx/i);
+    const idxLocal = findColE(/localidade/i);
+    const idxDep = findColE(/^deposito/i);
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i];
+      if(!r || r[0]==null || r[0]==='') continue;
+      let validade = null;
+      if(idxValidade>=0 && r[idxValidade]){
+        const v = r[idxValidade];
+        if(v instanceof Date) validade = v.toISOString().slice(0,10);
+        else if(typeof v === 'number'){ const d = XLSX.SSF.parse_date_code(v); if(d) validade = `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`; }
+        else { const parsed = new Date(v); if(!isNaN(parsed)) validade = parsed.toISOString().slice(0,10); }
+      }
+      out.estoque.push({
+        sku: r[0], descricao: String(r[1]||'').trim(), categoria: String(r[2]||'SEM CATEGORIA').trim(),
+        volume: r[3]!=null?String(r[3]).trim():'', marca: r[4],
+        lote: idxLote>=0 ? r[idxLote] : r[5],
+        validade,
+        qtdCx: Number(idxQtd>=0 ? r[idxQtd] : r[6])||0,
+        endereco: idxLocal>=0 ? r[idxLocal] : r[7],
+        deposito: idxDep>=0 ? r[idxDep] : r[8]
+      });
+    }
+    // localizar o bloco de resumo de paletes (rótulo "PALETES" em alguma célula,
+    // com Em Uso / Vazios (Bons, Danificados) / Total três linhas abaixo, mesma coluna em diante)
+    let found = false;
+    for(let i=0;i<rows.length && !found;i++){
+      const r = rows[i]||[];
+      for(let c=0;c<r.length;c++){
+        if(String(r[c]||'').trim().toUpperCase()==='PALETES'){
+          const dataRow = rows[i+3]||[];
+          const emUso = Number(dataRow[c]);
+          const vaziosBons = Number(dataRow[c+1]);
+          const vaziosDanificados = Number(dataRow[c+2]);
+          const total = Number(dataRow[c+3]);
+          if(!isNaN(emUso) && !isNaN(total)){
+            out.paletesResumo = {
+              emUso: emUso||0,
+              vaziosBons: vaziosBons||0,
+              vaziosDanificados: vaziosDanificados||0,
+              total: total||0
+            };
+            found = true;
+          }
+          break;
+        }
+      }
+    }
+  }
+  const cargaSheets = wb.SheetNames.filter(n=>n.toLowerCase().includes('carga'));
+  cargaSheets.forEach(sname=>{
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sname], {header:1, raw:true});
+    if(rows.length<3) return;
+    const headerRow = rows[1]||[];
+    const colTitles = rows[2]||[];
+    const dateMatch = String(sname).match(/(\d{2})-(\d{2})-(\d{2})/);
+
+    // detecta dinamicamente as colunas pelo título (robusto a pequenas mudanças de ordem/posição)
+    const findCol = (re) => colTitles.findIndex(h => re.test(String(h||'')));
+    const idxAvaria = findCol(/avaria|descarte/i);
+    const idxReembalar = findCol(/reembalar/i);
+    const idxNaoVeio = findCol(/n[aã]o\s*veio|falt/i);
+    const idxQuarentena = findCol(/quarentena/i);
+    const idxObs = findCol(/^\s*obs/i);
+    const newFormat = idxAvaria>=0 && idxReembalar>=0;
+
+    const items = [];
+    for(let i=3;i<rows.length;i++){
+      const r = rows[i];
+      if(!r || r[0]==null || r[0]==='') continue;
+      let occ = {avariaDescarte:0, reembalar:0, naoVeio:0, quarentena:0, obs:null};
+      if(newFormat){
+        occ = {
+          avariaDescarte: Number(r[idxAvaria])||0,
+          reembalar: Number(r[idxReembalar])||0,
+          naoVeio: idxNaoVeio>=0 ? (Number(r[idxNaoVeio])||0) : 0,
+          quarentena: idxQuarentena>=0 ? (Number(r[idxQuarentena])||0) : 0,
+          obs: idxObs>=0 ? (r[idxObs]||null) : null,
+        };
+      } else {
+        // formato antigo (texto livre em duas colunas) — mantido por compatibilidade
+        [r[10], r[11]].filter(Boolean).forEach(raw=>{
+          const leg = legacyTextToFields(raw);
+          occ.avariaDescarte += leg.avariaDescarte; occ.reembalar += leg.reembalar;
+          occ.naoVeio += leg.naoVeio; occ.quarentena += leg.quarentena;
+          if(leg.obs) occ.obs = occ.obs ? occ.obs+' / '+leg.obs : leg.obs;
+        });
+      }
+      items.push({
+        sku:r[0], descricao:String(r[1]||'').trim(), categoria:String(r[2]||'SEM CATEGORIA').trim(),
+        volume:r[3]!=null?String(r[3]).trim():'', marca:r[4], qtdCx:Number(r[5])||0, lote:r[6],
+        qtdConferida:Number(r[7])||0, endereco:r[8], divergencia:Number(r[9])||0, ...occ
+      });
+    }
+    out.cargas.push({
+      id: dateMatch ? dateMatch[0] : sname,
+      data: dateMatch ? `20${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : new Date().toISOString().slice(0,10),
+      nf: String(headerRow[0]||'').replace(/NF:\s*/i,'').trim(),
+      titulo: String(headerRow[1]||sname).trim(),
+      totalPaletesInformado: parseInt((String(headerRow[2]||'').match(/\d+/)||[0])[0],10)||0,
+      motorista: String(headerRow[3]||'').replace(/MOTORISTA:\s*/i,'').trim(),
+      veiculo: String(headerRow[6]||'').replace(/CAMINHAO:\s*|CARRO:\s*|VE[IÍ]CULO:\s*/i,'').trim(),
+      paletesVazios: parseInt((String(headerRow[8]||'').match(/\d+/)||[0])[0],10)||0,
+      items
+    });
+  });
+
+  // aba SAP (confronto físico x sistema) — opcional
+  const sapSheetName = wb.SheetNames.find(n=>n.toLowerCase().trim()==='sap' || n.toLowerCase().includes('sap'));
+  out.sap = [];
+  if(sapSheetName){
+    const rowsSap = XLSX.utils.sheet_to_json(wb.Sheets[sapSheetName], {header:1, raw:true});
+    const headerSap = rowsSap[0]||[];
+    const findColS = (re) => headerSap.findIndex(h => re.test(String(h||'')));
+    const idxSku = findColS(/produto|c[oó]digo|sku/i);
+    const idxDesc = findColS(/descri[çc][aã]o/i);
+    const idxLote = findColS(/lote/i);
+    const idxQtd = findColS(/qtd|quantidade|dispon[ií]vel/i);
+    const idxVal = findColS(/vencimento|validade/i);
+    for(let i=1;i<rowsSap.length;i++){
+      const r = rowsSap[i];
+      if(!r || r[idxSku>=0?idxSku:0]==null || r[idxSku>=0?idxSku:0]==='') continue;
+      let validade = null;
+      const vraw = idxVal>=0 ? r[idxVal] : null;
+      if(vraw instanceof Date) validade = vraw.toISOString().slice(0,10);
+      else if(typeof vraw === 'number'){ const dd = XLSX.SSF.parse_date_code(vraw); if(dd) validade = `${dd.y}-${String(dd.m).padStart(2,'0')}-${String(dd.d).padStart(2,'0')}`; }
+      else if(vraw){ const p = new Date(vraw); if(!isNaN(p)) validade = p.toISOString().slice(0,10); }
+      out.sap.push({
+        sku: Number(String(r[idxSku>=0?idxSku:0]).trim()),
+        descricao: String((idxDesc>=0?r[idxDesc]:'')||'').trim(),
+        lote: (idxLote>=0 && r[idxLote]!=null) ? r[idxLote] : null,
+        qtd: Number(idxQtd>=0 ? r[idxQtd] : 0)||0,
+        validade
+      });
+    }
+  } else {
+    out.sap = JSON.parse(JSON.stringify(state.data.sap||[]));
+  }
+  return out;
+}
+function legacyTextToFields(raw){
+  const res = {avariaDescarte:0, reembalar:0, naoVeio:0, quarentena:0, obs:null};
+  const t = String(raw).toLowerCase();
+  const m = t.match(/(\d+)/);
+  const qtd = m ? parseInt(m[1],10) : 0;
+  if(t.includes('reembalar')) res.reembalar = qtd;
+  else if(t.includes('descarte')) res.avariaDescarte = qtd;
+  else if(t.includes('não veio')||t.includes('nao veio')) res.naoVeio = qtd;
+  else if(t.includes('quarentena')) res.quarentena = qtd;
+  else if(!t.includes('ok')) res.obs = raw;
+  return res;
+}
+
+document.getElementById('btn-export').addEventListener('click', ()=>{
+  const wb = XLSX.utils.book_new();
+  const estHeader = ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUME','MARCA','LOTES','VALIDADE','QTD.CX','LOCALIDADE','DEPOSITO'];
+  const pr = state.data.paletesResumo;
+  const paletesData   = [pr.emUso,pr.vaziosBons,pr.vaziosDanificados,pr.total];
+  const estRows = [
+    estHeader.concat(['', 'PALETES']),
+    ...state.data.estoque.map((r,i)=>{
+      const row = [r.sku,r.descricao,r.categoria,r.volume,r.marca,r.lote,r.validade,r.qtdCx,r.endereco,r.deposito];
+      if(i===0) row.push('', 'Em Uso', 'Vazios', '', 'Total');
+      else if(i===1) row.push('', '', 'Bons', 'Danificados');
+      else if(i===2) row.push('', paletesData[0], paletesData[1], paletesData[2], paletesData[3]);
+      return row;
+    })
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(estRows), 'Estoque');
+
+  state.data.cargas.forEach(c=>{
+    const rows = [
+      ['FOLHA DE CONFERÊNCIA DE ENTRADA'],
+      [`NF: ${c.nf}`, c.titulo, `TOTAL ${c.totalPaletesInformado} PALETES`, `MOTORISTA: ${c.motorista}`, '', '', `VEÍCULO: ${c.veiculo}`, '', `PALETES VAZIOS: ${c.paletesVazios}`],
+      ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUM.','MARCA','QTD.CX','LOTE','QTD CONFERIDA','ENDEREÇO','DIVERGENCIA','AVARIA','REEMBALAR','OBS'],
+      ...c.items.map(it=>[it.sku,it.descricao,it.categoria,it.volume,it.marca,it.qtdCx,it.lote,it.qtdConferida,it.endereco,it.divergencia,it.avariaDescarte||'',it.reembalar||'',it.obs]),
+    ];
+    const totalCx = c.items.reduce((s,it)=>s+(it.qtdCx||0),0);
+    const totalConf = c.items.reduce((s,it)=>s+(it.qtdConferida||0),0);
+    rows.push([null,null,null,null,null,totalCx,null,totalConf,null,totalConf-totalCx]);
+    const sheetName = `Carga ${c.id}`.slice(0,31);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), sheetName);
+  });
+
+  if((state.data.sap||[]).length){
+    const sapRows = [
+      ['Produto','Descrição breve do produto','Lote','Qtd.disponível','Data do vencimento'],
+      ...state.data.sap.map(r=>[r.sku, r.descricao, r.lote, r.qtd, r.validade])
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sapRows), 'SAP');
+  }
+
+  XLSX.writeFile(wb, 'Estoque_BH_export.xlsx');
+  toast('Planilha exportada com sucesso.');
+});
+
+document.getElementById('btn-reset').addEventListener('click', ()=>{
+  state.data = JSON.parse(JSON.stringify(ORIGINAL));
+  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null; state.openCarga=null;
+  document.getElementById('f-search').value='';
+  document.getElementById('f-categoria').value='';
+  document.getElementById('f-from').value='';
+  document.getElementById('f-to').value='';
+  populateCategoriaFilter();
+  renderAll();
+  toast('Dados originais da planilha restaurados.');
+});
+
+/* ============ INIT ============ */
+populateCategoriaFilter();
+renderAll();
+
+</script>
+</body>
+</html>
