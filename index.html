@@ -668,6 +668,34 @@ function categoryBreakdown(rows){
   return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
 
+/* Soma de caixas por SKU nos depósitos faturáveis (CD13 + Picking), sem
+   distinguir de qual dos dois veio — respeita os mesmos filtros da tabela
+   de posições (busca, categoria, endereço selecionado no mapa de racks). */
+function skuTotalsFaturavel(rows){
+  const filtered = rows.filter(r=>matchesSearch(r) && matchesCategoria(r) && (!state.addressFilter || r.endereco===state.addressFilter));
+  const map = {};
+  filtered.forEach(r=>{
+    if(!map[r.sku]) map[r.sku] = { sku:r.sku, descricao:r.descricao, qtd:0 };
+    map[r.sku].qtd += r.qtdCx||0;
+  });
+  return Object.values(map).sort((a,b)=>b.qtd-a.qtd);
+}
+function skuTotalsTable(rows, limit){
+  const all = skuTotalsFaturavel(rows);
+  const shown = limit ? all.slice(0,limit) : all;
+  let body = shown.map(s=>`
+    <tr>
+      <td class="mono">${s.sku}</td>
+      <td class="desc-cell"><b>${esc(s.descricao)}</b></td>
+      <td class="num">${fmtInt(s.qtd)}</td>
+    </tr>`).join('');
+  if(!body) body = `<tr class="empty-row"><td colspan="3">Nenhum SKU encontrado para os filtros atuais.</td></tr>`;
+  const foot = `<div class="card-sub" style="margin-top:10px;margin-bottom:0;">${fmtInt(shown.length)} de ${fmtInt(all.length)} SKUs exibidos</div>`;
+  return `<div class="table-scroll" style="max-height:420px;"><table>
+    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx (CD13+Picking)</th></tr></thead>
+    <tbody>${body}</tbody></table></div>${foot}`;
+}
+
 /* ============ SVG CHART HELPERS ============ */
 function svgEl(tag, attrs){
   let s = `<${tag}`;
@@ -989,9 +1017,15 @@ function renderDepPanel(key){
         <div id="table-${key}">${stockTable(rows)}</div>
       </div>
       <div class="card">
-        <div class="card-head"><h3>Caixas por categoria</h3></div>
-        <div class="card-sub">Distribuição do volume armazenado nesta área.</div>
-        ${barData.length ? barChartH(barData,{width:400}) : '<div class="card-sub">Sem itens nesta área.</div>'}
+        ${key==='cd13' ? (()=>{ const skuList = skuTotalsFaturavel(rows); return `
+          <div class="card-head"><h3>Total por SKU — saldo faturável <span style="font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle;">${fmtInt(skuList.length)} SKU${skuList.length===1?'':'s'}</span></h3></div>
+          <div class="card-sub">Soma de caixas por SKU em CD13 + Picking juntos (sem distinguir de qual dos dois veio). O contador acima mostra quantos SKUs distintos estão cadastrados nessas áreas hoje — sobe conforme novos itens forem lançados. Clique num endereço no mapa, ou busque um SKU/descrição, para ver só o total daquele item.</div>
+          ${skuTotalsTable(rows, null)}
+        `; })() : `
+          <div class="card-head"><h3>Caixas por categoria</h3></div>
+          <div class="card-sub">Distribuição do volume armazenado nesta área.</div>
+          ${barData.length ? barChartH(barData,{width:400}) : '<div class="card-sub">Sem itens nesta área.</div>'}
+        `}
       </div>
     </div>
   `;
