@@ -829,7 +829,7 @@ function renderKPIs(){
     kpiCard('% avarias no período', fmtPct(k.pctAvarias), `${fmtInt(k.avarias)} cx avariadas de ${fmtInt(k.cxPrevista)} cx carregadas`, 'alert', 'var(--descarte)', 1),
     kpiCard('Estoque real (faturável)', fmtInt(k.saldoReal), `Saldo atual em ${fmtInt(k.saldoRealPosicoes)} endereços do CD13 — não inclui quarentena/reembalar/descarte`, 'layers', 'var(--cd13)', 2),
     kpiCard('Acuracidade da conferência', fmtPct(k.acuracidade), `Base: ${fmtInt(k.cxPrevista)} cx previstas no período`, 'target', 'var(--reembalar)', 3),
-    kpiCard('Caixas conferidas', fmtInt(k.cxConferida), `Total recebido nas cargas do período · ${fmtInt(k.excesso)} cx de excesso encontradas`, 'check', 'var(--ok)', 4),
+    kpiCard('Caixas no CD', fmtInt(k.totalCxEstoque), `Tudo que está fisicamente armazenado — inclui CD13, Quarentena, Reembalar e Avariar/Descarte`, 'check', 'var(--ok)', 4),
     kpiCard('Paletes no parque', fmtInt(k.paletes.total), `${fmtInt(k.paletes.emUso)} em uso · ${fmtInt(k.paletes.vaziosBons+k.paletes.vaziosDanificados)} vazios`, 'pallet', 'var(--quarentena)', 5),
   ].join('');
   document.getElementById('kpi-grid').innerHTML = html;
