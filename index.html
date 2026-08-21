@@ -528,16 +528,6 @@ function filteredCargas(){
   return state.data.cargas.filter(c => inPeriod(c.data));
 }
 
-/* Avaria e Reembalar são fatos autocontidos da própria aba Estoque (soma direta
-   de QTD.CX por depósito) — o SAP nunca teve a intenção de rastrear essas zonas
-   da mesma forma, então comparar contra o SAP gera divergência falsa por
-   natureza. Essas linhas ficam fora de todo o confronto SAP (por SKU, por
-   lote e por endereço). */
-const FORA_DO_CONFRONTO_SAP = [...DEP_GROUPS.reembalar.deps, ...DEP_GROUPS.descarte.deps].map(normDep);
-function entraNoConfrontoSap(deposito){
-  return !FORA_DO_CONFRONTO_SAP.includes(normDep(deposito));
-}
-
 /* ============ CONFRONTO SAP (físico x sistema, por código + lote) ============ */
 function computeSapConfronto(){
   const wmsLote = new Map(); // key "sku|lote" -> {sku,lote,qtd,descricao}
@@ -593,65 +583,6 @@ function computeSapConfronto(){
   }).sort((a,b)=> Math.abs(b.diff)-Math.abs(a.diff));
 
   return {porLote, porSku};
-}
-
-/* Normaliza endereços de picking: o SAP às vezes grava as ruas I/J sem o "P" na
-   frente ("J17" em vez de "PJ17" do WMS) — mesma posição física, nomenclatura
-   diferente entre os dois sistemas. Sem isso, toda posição de picking aparece
-   como falsa divergência de endereço. */
-function normEndereco(addr){
-  if(addr==null) return addr;
-  const s = String(addr).trim();
-  const m = s.match(/^([IJ])(\d+)$/i);
-  if(m) return 'P'+m[1].toUpperCase()+m[2];
-  return s;
-}
-
-/* Confronto de ENDEREÇO — cruza WMS x SAP por SKU+Lote+Endereço (não só quantidade).
-   Pega um problema diferente do confronto por lote: item físico numa posição que o
-   SAP não reconhece pra aquele lote (ou vice-versa), e quantidade divergente numa
-   MESMA posição em que os dois sistemas concordam sobre onde ela está. */
-function computeEnderecoConfronto(){
-  const wmsMap = new Map(); // "sku|lote|endereco" -> {sku,lote,endereco,qtd,descricao}
-  (state.data.estoque||[]).forEach(raw=>{
-    if(!entraNoConfrontoSap(raw.deposito)) return; // "AVARIA"/"REEMBALAR" nao sao posicoes de rack reais — nao ha endereco SAP equivalente confiavel pra comparar
-    const r = {...raw, sku:Number(raw.sku)};
-    if(r.endereco==null || String(r.endereco).trim()==='') return; // ignora posicoes livres declaradas
-    const endereco = normEndereco(r.endereco);
-    const key = `${r.sku}|${r.lote}|${endereco}`;
-    if(!wmsMap.has(key)) wmsMap.set(key, {sku:r.sku, lote:r.lote, endereco, descricao:r.descricao, qtd:0});
-    wmsMap.get(key).qtd += r.qtdCx||0;
-  });
-  const sapMap = new Map();
-  (state.data.sap||[]).forEach(raw=>{
-    const r = {...raw, sku:Number(raw.sku)};
-    if(r.endereco==null || String(r.endereco).trim()==='') return; // linhas do SAP sem endereco informado nao entram no confronto
-    const endereco = normEndereco(r.endereco);
-    const key = `${r.sku}|${r.lote}|${endereco}`;
-    if(!sapMap.has(key)) sapMap.set(key, {sku:r.sku, lote:r.lote, endereco, descricao:r.descricao, qtd:0});
-    sapMap.get(key).qtd += r.qtd||0;
-  });
-
-  const allKeys = new Set([...wmsMap.keys(), ...sapMap.keys()]);
-  const rows = [...allKeys].map(key=>{
-    const w = wmsMap.get(key), s = sapMap.get(key);
-    const wQ = w?.qtd||0, sQ = s?.qtd||0;
-    const base = w||s;
-    let status;
-    if(wQ>0 && sQ>0) status = wQ===sQ ? 'ok' : 'diverge';
-    else if(wQ>0) status = 'so_fisico';
-    else status = 'so_sap';
-    return {sku:base.sku, descricao:base.descricao, lote:base.lote, endereco:base.endereco, wms:wQ, sap:sQ, diff:wQ-sQ, status};
-  });
-  const ordem = {diverge:0, so_fisico:1, so_sap:2, ok:3};
-  rows.sort((a,b)=> (ordem[a.status]-ordem[b.status]) || (Math.abs(b.diff)-Math.abs(a.diff)));
-
-  // problema conhecido: fórmula de VALIDADE do WMS pode estar quebrada (aponta pra
-  // coluna errada da aba SAP) — detecta datas anteriores a 2000 como sinal disso
-  const estoqueComData = (state.data.estoque||[]).filter(r=>r.validade);
-  const suspeitas = estoqueComData.filter(r=>r.validade < '2000-01-01').length;
-
-  return { rows, validadeSuspeita: { suspeitas, total: estoqueComData.length } };
 }
 
 
@@ -1482,71 +1413,6 @@ function renderSapTab(){
         <thead><tr><th>SKU</th><th>Descrição</th><th>Lote</th><th style="text-align:right">Físico (WMS)</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
         <tbody>${loteBody}</tbody>
       </table></div>
-    </div>
-
-    ${renderEnderecoConfrontoCard()}
-  `;
-}
-
-/* Card de confronto por ENDEREÇO — usa a coluna "PD origem" da aba SAP */
-function renderEnderecoConfrontoCard(){
-  const { rows, validadeSuspeita } = computeEnderecoConfronto();
-  if(!(state.data.sap||[]).some(r=>r.endereco)){
-    return `<div class="card">
-      <div class="card-head"><h3>Confronto de endereço</h3></div>
-      <div class="card-sub">A aba SAP ainda não tem uma coluna de endereço/posição (ex.: "PD origem"). Assim que ela existir na planilha importada, este card cruza automaticamente onde o WMS diz que o item está contra onde o SAP diz que ele está.</div>
-    </div>`;
-  }
-
-  const okCount = rows.filter(r=>r.status==='ok').length;
-  const divergeCount = rows.filter(r=>r.status==='diverge').length;
-  const soFisicoCount = rows.filter(r=>r.status==='so_fisico').length;
-  const soSapCount = rows.filter(r=>r.status==='so_sap').length;
-
-  const statusInfo = {
-    ok: ['Bate certinho','soft-ok'],
-    diverge: ['⚠ Qtd diverge nesse endereço','' ],
-    so_fisico: ['Só no físico (sem lastro SAP ali)','soft-descarte'],
-    so_sap: ['Só no SAP (sem posição física ali)','soft-quarentena'],
-  };
-  const filtered = rows.filter(r => !state.search || String(r.sku).includes(state.search.toLowerCase()) || (r.descricao||'').toLowerCase().includes(state.search.toLowerCase()) || String(r.endereco||'').toLowerCase().includes(state.search.toLowerCase()));
-  let body = filtered.map(r=>{
-    const [txt,clsBase] = statusInfo[r.status];
-    const cls = r.status==='diverge' ? 'soft-descarte' : clsBase;
-    return `<tr>
-      <td class="mono">${r.sku}</td>
-      <td class="desc-cell"><b>${esc(r.descricao)}</b></td>
-      <td class="mono">${esc(r.lote)}</td>
-      <td><span class="addr-chip">${esc(r.endereco)}</span></td>
-      <td class="num">${r.wms?fmtInt(r.wms):'—'}</td>
-      <td class="num">${r.sap?fmtInt(r.sap):'—'}</td>
-      <td class="num ${r.diff===0?'occ-ok':(r.diff>0?'acc-ok':'occ-bad')}">${r.wms&&r.sap?`${r.diff>0?'+':''}${fmtInt(r.diff)}`:'—'}</td>
-      <td><span class="occ-tag ${cls}">${txt}</span></td>
-    </tr>`;
-  }).join('');
-  if(!body) body = `<tr class="empty-row"><td colspan="8">Nenhum endereço encontrado para os filtros atuais.</td></tr>`;
-
-  const validadeBanner = validadeSuspeita.suspeitas>0 ? `
-    <div class="card-sub" style="margin:0 0 14px;padding:10px 14px;background:#FFE4E1;color:#8A2A21;border-radius:8px;">
-      🔴 <b>${fmtInt(validadeSuspeita.suspeitas)} de ${fmtInt(validadeSuspeita.total)}</b> datas de validade na aba Estoque vieram anteriores ao ano 2000 — sinal de que a fórmula de VALIDADE está buscando a coluna errada na aba SAP (provavelmente porque a coluna "PD origem" deslocou tudo uma casa pra direita). A data correta está na aba SAP; ajuste a fórmula do Estoque para apontar pra coluna de vencimento certa.
-    </div>` : '';
-
-  return `
-    <div class="card">
-      <div class="card-head"><h3>Confronto de endereço</h3></div>
-      <div class="card-sub">Cruza SKU + Lote + <b>Endereço</b> entre o físico (WMS) e o SAP (coluna "PD origem"). Pega um problema diferente do confronto por lote: item registrado numa posição que o outro sistema não confirma — ou quantidade divergente numa posição em que os dois concordam sobre o local. <b>Avaria e Reembalar ficam fora só deste confronto por endereço</b> ("AVARIA"/"REEMBALAR" não são posições de rack reais, sem endereço SAP equivalente pra comparar — mas essas caixas continuam entrando no total do SKU no card acima). Zonas do SAP como "AF-ZONE" ou "FATURAMENTO" são etapas do processo, não posições de rack — não esperamos achá-las no WMS.</div>
-      ${validadeBanner}
-      <div class="mini-kpis" style="grid-template-columns:repeat(4,1fr);">
-        <div class="mini-kpi"><div class="l">Bate certinho</div><div class="v acc-ok">${fmtInt(okCount)}</div></div>
-        <div class="mini-kpi"><div class="l">Qtd diverge no endereço</div><div class="v acc-descarte">${fmtInt(divergeCount)}</div></div>
-        <div class="mini-kpi"><div class="l">Só no físico</div><div class="v">${fmtInt(soFisicoCount)}</div></div>
-        <div class="mini-kpi"><div class="l">Só no SAP</div><div class="v">${fmtInt(soSapCount)}</div></div>
-      </div>
-      <div class="table-scroll" style="max-height:560px;"><table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Lote</th><th>Endereço</th><th style="text-align:right">Físico</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
-        <tbody>${body}</tbody>
-      </table></div>
-      <div class="card-sub" style="margin-top:10px;margin-bottom:0;">${fmtInt(filtered.length)} de ${fmtInt(rows.length)} combinações SKU+Lote+Endereço exibidas.</div>
     </div>
   `;
 }
