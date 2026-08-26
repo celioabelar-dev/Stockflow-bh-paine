@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ministério de Louvor - IBPaz</title>
+   
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+  :root {
+    --primary-color: #0d6efd;
+    --bg-color: #f8f9fa;
+  }
+  body {
+  background-color: var(--bg-color);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+  padding-bottom: 70px;
+  margin: 0;
+  width: 100vw;
+  min-height: 100vh;
+}
+  .login-container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  }
+  .nav-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #e9ecef;
+    z-index: 1030;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+  }
+  .nav-item-mobile {
+    background: none;
+    border: none;
+    color: #6c757d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 500;
+    width: 33.3%;
+  }
+  .nav-item-mobile i {
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+  .nav-item-mobile.active {
+    color: var(--primary-color);
+    font-weight: 700;
+  }
+  .avisos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .banner-aviso {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: stretch;
+    height: 100%;
+    margin: 0;
+  }
+  .banner-body {
+    padding: 12px 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .banner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background-color: #eef2ff;
+    color: #4f46e5;
+    margin-bottom: 6px;
+    width: fit-content;
+  }
+  .banner-texto {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    line-height: 1.4;
+    margin: 0;
+  }
+  .banner-media-container {
+    width: 42%;
+    min-width: 120px;
+    max-width: 180px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .banner-img-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  @media (max-width: 768px) {
+    .avisos-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+  .escala-grupo-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-top: 5px solid var(--cor-grupo, #0d6efd);
+  }
+  .escala-grupo-header {
+    margin-bottom: 12px;
+  }
+  .escala-grupo-titulo {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .escala-lider-info {
+    font-size: 13px;
+    color: #4b5563;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .escala-lider-tel {
+    color: #25d366;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .escala-lider-tel:hover {
+    text-decoration: underline;
+  }
+  .escala-datas-container {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #e5e7eb;
+  }
+  .escala-datas-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 6px;
+  }
+  .escala-data-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    background-color: #f3f4f6;
+    color: #1f2937;
+  }
+  .escala-repertorio-container {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #e5e7eb;
+  }
+  .escala-repertorio-container ul li {
+    padding: 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .style-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .style-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+  }
+</style>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Louvor IBPAZ">
+
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3844/3844721.png">
+
+<link rel="manifest" href='data:application/manifest+json,{
+  "name": "Louvor IBPAZ",
+  "short_name": "IBPAZ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844721.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844721.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}'>
+  </head>
+  <body>
+    
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0d6efd">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Louvor IBPAZ">
+<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3844/3844721.png">
+
+<link rel="manifest" href='data:application/manifest+json,{
+  "name": "Louvor IBPAZ",
+  "short_name": "IBPAZ",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#0d6efd",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844721.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844721.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}'>
+
+  <!-- TELA DE LOGIN -->
+  <div id="telaLogin" class="login-container">
+    <div class="card login-card p-4">
+      <div class="text-center mb-4">
+        <i class="fa-solid fa-guitar text-primary mb-2" style="font-size: 40px;"></i>
+        <h4 class="fw-bold text-dark">LOUVOR IBPAZ</h4>
+        <p class="text-muted small">Acesse o portal do ministério</p>
+      </div>
+     
+      <form id="formLogin" onsubmit="executarLogin(event)">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Usuário</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
+            <input type="text" id="iptUsuario" class="form-control" placeholder="Digite seu login" required>
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-bold">Senha</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="fa-solid fa-lock text-muted"></i></span>
+            <input type="password" id="iptSenha" class="form-control" placeholder="Digite sua senha" required>
+          </div>
+        </div>
+        <button type="submit" id="btnEntrar" class="btn btn-primary w-100 fw-bold py-2">Entrar</button>
+      </form>
+    </div>
+  </div>
+  <!-- APLICAÇÃO PRINCIPAL -->
+  <div id="appPrincipal" style="display: none;">
+    <div class="container pt-3 px-3 pb-5">
+     
+      <!-- SEÇÃO HOME -->
+      <div id="secaoHome" class="app-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <span class="text-muted small d-block">Paz do Senhor,</span>
+            <h5 class="fw-bold m-0" id="nomeUsuarioHome">Integrante</h5>
+          </div>
+          <button onclick="fazerLogout()" class="btn btn-sm btn-outline-danger border-0">
+            <i class="fa-solid fa-right-from-bracket"></i> Sair
+          </button>
+        </div>
+        <div id="containerAvisosHome" class="avisos-grid mb-4">
+          <span class="text-muted small">Carregando avisos...</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold text-dark m-0"><i class="fa-solid fa-calendar-days text-primary me-1"></i> Escala de Louvor</h6>
+          <span class="badge bg-primary rounded-pill">Atualizada</span>
+        </div>
+       
+        <div id="listaEscalasMes" class="avisos-grid">
+          <span class="text-muted small">Carregando escalas...</span>
+        </div>
+      </div> <!-- /FECHAMENTO DA SEÇÃO HOME -->
+
+      <!-- SEÇÃO ESTÚDIO -->
+      <div id="secaoEstudio" class="app-section" style="display: none;">
+        <div class="mb-3">
+          <h5 class="fw-bold m-0">Estúdio & Reservas</h5>
+          <span class="text-muted small">Agendamentos e bloqueios de datas</span>
+        </div>
+        <ul class="nav nav-pills nav-fill mb-3 bg-white p-1 rounded border" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active py-2 small fw-bold" id="tab-estudio-btn" data-bs-toggle="pill" data-bs-target="#sub-estudio" type="button">
+              <i class="fa-solid fa-microphone me-1"></i> Estúdio
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-2 small fw-bold" id="tab-indisp-btn" data-bs-toggle="pill" data-bs-target="#sub-indisp" type="button">
+              <i class="fa-solid fa-calendar-xmark me-1"></i> Indisponibilidade de Data
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="sub-estudio" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-4">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clock text-primary me-1"></i> Agendar Ensaio</h6>
+              <form id="formAgendarEstudio" onsubmit="salvarAgendamentoEstudio(event)">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">Data do Ensaio</label>
+                  <input type="date" id="estudio_data" class="form-control" required>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold">Início</label>
+                    <input type="time" id="estudio_inicio" class="form-control" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold">Fim</label>
+                    <input type="time" id="estudio_fim" class="form-control" required>
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label small fw-bold">Responsável</label>
+                  <input type="text" id="estudio_responsavel" class="form-control bg-light" readonly required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold">Confirmar Agendamento</button>
+              </form>
+              <div class="mt-4 pt-3 border-top">
+                <h6 class="fw-bold text-secondary mb-2" style="font-size: 13px;"><i class="fa-solid fa-list me-1"></i> Horários Agendados</h6>
+                <div id="listaAgendaEstudio" class="style-scroll" style="max-height: 200px; overflow-y: auto;">
+                  <span class="text-muted small">Carregando horários...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-pane fade" id="sub-indisp" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-4">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>Data</h6>
+              <form id="formIndisponibilidade" onsubmit="salvarIndisponibilidadeForm(event)">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">Data de Indisponibilidade</label>
+                  <input type="date" id="indisp_data" class="form-control" required>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label small fw-bold">Motivo / Justificativa</label>
+                  <textarea id="indisp_justificativa" class="form-control" rows="3" placeholder="Ex: Viagem, trabalho..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Bloquear no Calendário</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div> <!-- /FECHAMENTO DA SEÇÃO ESTÚDIO -->
+
+      <!-- SEÇÃO GESTÃO -->
+      <div id="secaoGestao" class="app-section" style="display: none;">
+        <div class="mb-3">
+          <h5 class="fw-bold m-0">Painel do Líder</h5>
+          <span class="text-muted small">Gestão geral do ministério</span>
+        </div>
+        <ul class="nav nav-pills nav-fill mb-3 bg-white p-1 rounded border" id="tabsGestao" role="tablist">
+          <li class="nav-item">
+            <button class="nav-link active py-2 small fw-bold" id="tab-criar-escala-btn" data-bs-toggle="pill" data-bs-target="#sub-criar-escala" type="button" onclick="carregarIndisponiveisDoMesAtual()">
+              <i class="fa-solid fa-calendar-plus me-1"></i> Escala
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-2 small fw-bold" id="tab-integrantes-btn" data-bs-toggle="pill" data-bs-target="#sub-integrantes" type="button" onclick="carregarListaIntegrantes()">
+              <i class="fa-solid fa-users me-1"></i> Equipe
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-2 small fw-bold" id="tab-grupos-btn" data-bs-toggle="pill" data-bs-target="#sub-grupos" type="button" onclick="carregarTelaGrupos()">
+              <i class="fa-solid fa-layer-group me-1"></i> Grupos
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-2 small fw-bold" id="tab-musicas-btn" data-bs-toggle="pill" data-bs-target="#sub-musicas" type="button" onclick="carregarListaMusicas()">
+              <i class="fa-solid fa-music me-1"></i> Músicas
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link py-2 small fw-bold" id="tab-avisos-btn" data-bs-toggle="pill" data-bs-target="#sub-avisos" type="button">
+              <i class="fa-solid fa-bullhorn me-1"></i> Banners
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content" id="tabsGestaoContent">
+         
+          <!-- SUBTAB: CRIAR ESCALA -->
+          <div class="tab-pane fade show active" id="sub-criar-escala" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                <h6 class="fw-bold text-dark m-0">
+                  <i class="fa-solid fa-calendar-plus text-primary me-1"></i> Publicar Nova Escala
+                </h6>
+                <div class="d-flex gap-1">
+                  <select id="escala_filtro_mes" class="form-select form-select-sm border-primary text-primary fw-bold" style="width: auto;" onchange="carregarIndisponiveisDoMesAtual()">
+                    <option value="01">Jan</option><option value="02">Fev</option><option value="03">Mar</option>
+                    <option value="04">Abr</option><option value="05">Mai</option><option value="06">Jun</option>
+                    <option value="07">Jul</option><option value="08">Ago</option><option value="09">Set</option>
+                    <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+                  </select>
+                  <select id="escala_filtro_ano" class="form-select form-select-sm border-primary text-primary fw-bold" style="width: auto;" onchange="carregarIndisponiveisDoMesAtual()">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                  </select>
+                </div>
+              </div>
+              <div id="bannerIndisponiveis" class="alert alert-warning border-start border-4 p-2 mb-3 shadow-sm">
+                <div class="fw-bold text-dark small mb-1">
+                  <i class="fa-solid fa-triangle-exclamation text-warning"></i> Bloqueios de Integrantes no Mês:
+                </div>
+                <ul id="listaIndisponiveisData" class="m-0 ps-3 text-dark style-scroll" style="max-height: 120px; overflow-y: auto; font-size: 11px;">
+                  <li class="text-muted">Mapeando calendário...</li>
+                </ul>
+              </div>
+              <form id="formCriarEscala" onsubmit="salvarNovaEscalaForm(event)">
+                <div class="row g-2 mb-3">
+                  <div class="col-md-4 col-12">
+                    <label class="form-label small fw-bold text-muted mb-1">Data</label>
+                    <input type="date" id="escala_data" class="form-control form-control-sm" required>
+                  </div>
+                  <div class="col-md-4 col-6">
+                    <label class="form-label small fw-bold text-muted mb-1">Horário</label>
+                    <select id="escala_hora_predefinida" class="form-select form-select-sm" onchange="ajustarSeletorHorario(this.value)" required>
+                      <option value="">Selecione...</option>
+                      <option value="08:00">08:00 (Manhã 1)</option>
+                      <option value="10:00">10:00 (Manhã 2)</option>
+                      <option value="17:00">17:00 (Noite 1)</option>
+                      <option value="19:00">19:00 (Noite 2)</option>
+                      <option value="outro">Outro horário...</option>
+                    </select>
+                    <input type="time" id="escala_hora" class="form-control form-control-sm mt-1 d-none">
+                  </div>
+                  <div class="col-md-4 col-6">
+                    <label class="form-label small fw-bold text-muted mb-1">Culto</label>
+                    <select id="escala_tipo" class="form-select form-select-sm" required>
+                      <option value="">Selecione...</option>
+                      <option value="Culto de Celebração">Culto de Celebração</option>
+                      <option value="Culto de Ensino">Culto de Ensino</option>
+                      <option value="Culto de Jovens">Culto de Jovens</option>
+                      <option value="Santa Ceia">Santa Ceia</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold text-muted mb-1">Grupo Escalado</label>
+                  <select id="escala_grupo" class="form-select form-select-sm" required>
+                    <option value="">Carregando grupos...</option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label small fw-bold text-muted mb-1">Repertório Musical</label>
+                  <div id="containerCheckMusicas" class="p-2 border rounded bg-white style-scroll" style="max-height: 140px; overflow-y: auto; font-size: 12px;">
+                    <span class="text-muted small">Carregando músicas...</span>
+                  </div>
+                </div>
+                <button type="submit" id="btnSalvarEscala" class="btn btn-primary w-100 fw-bold shadow-sm">Salvar e Publicar Escala</button>
+              </form>
+            </div>
+          </div>
+          <!-- SUBTAB: INTEGRANTES -->
+          <div class="tab-pane fade" id="sub-integrantes" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-user-plus text-success me-1"></i> Novo Integrante</h6>
+              <form id="formCadastrarIntegrante" onsubmit="salvarNovoIntegrante(event)">
+                <div class="mb-2">
+                  <input type="text" id="int_nome" class="form-control form-control-sm" placeholder="Nome Completo" required>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <input type="text" id="int_usuario" class="form-control form-control-sm" placeholder="Login" required>
+                  </div>
+                  <div class="col-6">
+                    <input type="password" id="int_senha" class="form-control form-control-sm" placeholder="Senha" required>
+                  </div>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <input type="tel" id="int_telefone" class="form-control form-control-sm" placeholder="WhatsApp (DDD + Nº)" required>
+                  </div>
+                  <div class="col-6">
+                    <select id="int_nivel" class="form-select form-select-sm" required>
+                      <option value="3">Nível 3 - Integrante</option>
+                      <option value="2">Nível 2 - Líder</option>
+                      <option value="1">Nível 1 - Admin</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <input type="text" id="int_funcao" class="form-control form-control-sm" placeholder="Função (Ex: Teclado, Vocal, Bateria)" required>
+                </div>
+                <button type="submit" id="btnSalvarIntegrante" class="btn btn-success btn-sm w-100 fw-bold shadow-sm">Cadastrar</button>
+              </form>
+            </div>
+            <div class="card border-0 shadow-sm p-3 rounded-3">
+              <h6 class="fw-bold text-secondary mb-2" style="font-size: 13px;"><i class="fa-solid fa-address-book me-1"></i> Equipe Registrada</h6>
+              <div class="mb-2">
+                <input type="text" id="inputBuscaEquipe" class="form-control form-control-sm" placeholder="Pesquisar..." onkeyup="executarFiltroEquipeLocal()">
+              </div>
+              <div id="listaIntegrantesEquipe" class="style-scroll" style="max-height: 250px; overflow-y: auto;"></div>
+            </div>
+          </div>
+          <!-- SUBTAB: GRUPOS -->
+          <div class="tab-pane fade" id="sub-grupos" role="tabpanel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold text-dark m-0"><i class="fa-solid fa-layer-group text-primary me-1"></i> Grupos do Ministério</h6>
+              <button class="btn btn-sm btn-primary fw-bold" onclick="novoGrupoForm()">
+                <i class="fa-solid fa-plus me-1"></i> Novo Grupo
+              </button>
+            </div>
+            <!-- Form/Card de Gerenciamento do Grupo -->
+            <div id="cardFormGrupo" class="card p-3 shadow-sm border-0 mb-3" style="display: none;">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 id="tituloTelaGrupo" class="fw-bold m-0">Montar / Editar Grupo</h6>
+                <button type="button" class="btn-close" onclick="fecharFormGrupo()"></button>
+              </div>
+             
+              <input type="hidden" id="grupoId">
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label small fw-bold">Nome do Grupo</label>
+                  <input type="text" id="grupoNome" class="form-control form-control-sm" placeholder="Ex: Grupo Louvor 01">
+                </div>
+                <div class="col-3">
+                  <label class="form-label small fw-bold">Cor</label>
+                  <input type="color" id="grupoCor" class="form-control form-control-color form-control-sm w-100" value="#0d6efd">
+                </div>
+                <div class="col-3">
+                  <label class="form-label small fw-bold">Status</label>
+                  <select id="grupoStatus" class="form-select form-select-sm">
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                  </select>
+                </div>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-bold text-muted">Integrantes e Funções</span>
+                <button type="button" class="btn btn-sm btn-outline-primary py-0" onclick="adicionarLinhaMembro()" style="font-size: 11px;">
+                  + Adicionar Membro
+                </button>
+              </div>
+              <div id="listaMembrosContainer" class="mb-3"></div>
+              <div class="d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="fecharFormGrupo()">Cancelar</button>
+                <button type="button" class="btn btn-sm btn-success fw-bold" onclick="salvarGrupo()">Salvar Grupo</button>
+              </div>
+            </div>
+            <div class="card border-0 shadow-sm p-3 rounded-3">
+              <h6 class="fw-bold text-secondary mb-2" style="font-size: 13px;"><i class="fa-solid fa-list me-1"></i> Grupos Cadastrados</h6>
+              <div id="containerListaGrupos" class="style-scroll" style="max-height: 250px; overflow-y: auto;">
+                <span class="text-muted small">Carregando grupos...</span>
+              </div>
+            </div>
+          </div>
+          <!-- SUBTAB: MÚSICAS -->
+          <div class="tab-pane fade" id="sub-musicas" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-plus text-danger me-1"></i> Cadastrar Música</h6>
+              <form id="formCadastrarMusica" onsubmit="salvarNovaMusicaForm(event)">
+                <div class="row g-2 mb-2">
+                  <div class="col-8">
+                    <input type="text" id="mus_titulo" class="form-control form-control-sm" placeholder="Título" required>
+                  </div>
+                  <div class="col-4">
+                    <input type="text" id="mus_tom" class="form-control form-control-sm" placeholder="Tom">
+                  </div>
+                </div>
+                <div class="mb-2">
+                  <input type="text" id="mus_artista" class="form-control form-control-sm" placeholder="Artista / Banda" required>
+                </div>
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <input type="text" id="mus_palavra" class="form-control form-control-sm" placeholder="Palavra-chave">
+                  </div>
+                  <div class="col-6">
+                    <select id="mus_sentimento" class="form-select form-select-sm">
+                      <option value="">Sentimento...</option>
+                      <option value="Adoração">Adoração</option>
+                      <option value="Júbilo / Celebração">Júbilo / Celebração</option>
+                      <option value="Contrição">Contrição</option>
+                      <option value="Clamor">Clamor</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <input type="url" id="mus_cifra" class="form-control form-control-sm" placeholder="Link Cifra">
+                  </div>
+                  <div class="col-6">
+                    <input type="url" id="mus_video" class="form-control form-control-sm" placeholder="Link Vídeo/Áudio">
+                  </div>
+                </div>
+                <button type="submit" id="btnSalvarMusica" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">Salvar Música</button>
+              </form>
+            </div>
+            <div class="card border-0 shadow-sm p-3 rounded-3">
+              <h6 class="fw-bold text-secondary mb-2" style="font-size: 13px;"><i class="fa-solid fa-compact-disc me-1"></i> Repertório Ativo</h6>
+              <div id="listaMusicasRepertorio" class="style-scroll" style="max-height: 220px; overflow-y: auto;"></div>
+            </div>
+          </div>
+          <!-- SUBTAB: BANNERS -->
+          <div class="tab-pane fade" id="sub-avisos" role="tabpanel">
+            <div class="card border-0 shadow-sm p-3 rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullhorn text-primary me-1"></i> Editar Banners da Home (Até 3)</h6>
+              <form id="formGerenciarAviso" onsubmit="salvarAvisoComAnexo(event)">
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">Posição do Banner</label>
+                  <select id="aviso_slot_input" class="form-select form-select-sm" required>
+                    <option value="1">Aviso 1 (Destaque Principal)</option>
+                    <option value="2">Aviso 2</option>
+                    <option value="3">Aviso 3</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">Texto / Descrição do Banner</label>
+                  <textarea id="aviso_texto_input" class="form-control" rows="3" placeholder="Digite a mensagem do aviso..." required></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label small fw-bold">Anexar Mídia (Imagem, Vídeo ou Áudio)</label>
+                  <input type="file" id="aviso_arquivo_input" class="form-control form-control-sm" accept="image/*,video/*,audio/*">
+                  <span class="text-muted" style="font-size: 11px;">Imagens serão renderizadas diretamente na tela principal.</span>
+                </div>
+                <button type="submit" id="btnSalvarAviso" class="btn btn-primary btn-sm w-100 fw-bold shadow-sm">
+                  Publicar Banner na Home
+                </button>
+              </form>
+            </div>
+          </div>
+        </div> <!-- /tabsGestaoContent -->
+      </div> <!-- /FECHAMENTO DA SEÇÃO GESTÃO -->
+    </div> <!-- /container -->
+    <!-- NAVEGAÇÃO INFERIOR -->
+    <nav class="nav-mobile">
+      <button onclick="navegarPara('secaoHome')" class="nav-item-mobile active">
+        <i class="fa-solid fa-house"></i>
+        <span>Início</span>
+      </button>
+      <button id="btnMenuEstudio" onclick="navegarPara('secaoEstudio')" class="nav-item-mobile">
+        <i class="fa-solid fa-calendar-days"></i>
+        <span>Estúdio</span>
+      </button>
+      <button id="btnMenuGestao" onclick="navegarPara('secaoGestao')" class="nav-item-mobile">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Gestão</span>
+      </button>
+    </nav>
+  </div> <!-- /appPrincipal -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  var usuarioLogado = null;
+  var cacheUsuarios = [];
+  var cacheIntegrantes = [];
+  var listaIntegrantesParaGrupos = [];
+
+  // ==========================================================
+  // VERIFICAÇÃO DE VERSÃO DO APP (evita cache antigo em PWA/APK)
+  // ==========================================================
+  function verificarAtualizacaoApp() {
+    google.script.run
+      .withSuccessHandler(function(versaoServidor) {
+        var versaoLocal = localStorage.getItem('ibpaz_app_versao');
+        if (versaoLocal && versaoLocal !== versaoServidor) {
+          // Servidor tem versão nova: atualiza o registro local e força recarregar
+          // ignorando o cache, pegando o HTML/JS mais recente do servidor.
+          localStorage.setItem('ibpaz_app_versao', versaoServidor);
+          location.href = location.href.split('?')[0] + '?v=' + versaoServidor;
+        } else if (!versaoLocal) {
+          localStorage.setItem('ibpaz_app_versao', versaoServidor);
+        }
+      })
+      .withFailureHandler(function(err) {
+        console.error('Falha ao verificar versão do app:', err);
+      })
+      .obterVersaoApp();
+  }
+
+  // FUNÇÃO DEDICADA PARA EXIBIR A TELA DE LOGIN CENTRALIZADA
+  function exibirTelaLogin() {
+    var appPrincipal = document.getElementById('appPrincipal');
+    if (appPrincipal) appPrincipal.style.display = 'none';
+
+    var navMobile = document.querySelector('.nav-mobile');
+    if (navMobile) navMobile.style.setProperty('display', 'none', 'important');
+
+    var telaLogin = document.getElementById('telaLogin');
+    if (telaLogin) {
+      telaLogin.style.cssText = "display: flex !important; align-items: center !important; justify-content: center !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 99999 !important; background-color: var(--bg-color, #f8f9fa) !important;";
+    }
+  }
+
+  // VERIFICAÇÃO INICIAL AO CARREGAR A PÁGINA (versão do app + sessão salva)
+  window.addEventListener('DOMContentLoaded', function() {
+    verificarAtualizacaoApp();
+
+    var sessaoSalva = localStorage.getItem('ibpaz_sessao');
+    if (sessaoSalva) {
+      try {
+        usuarioLogado = JSON.parse(sessaoSalva);
+        iniciarAplicacao();
+      } catch (e) {
+        exibirTelaLogin();
+      }
+    } else {
+      exibirTelaLogin();
+    }
+  });
+
+  // EXECUTA O LOGIN
+function executarLogin(e) {
+  if (e) e.preventDefault();
+  
+  var btn = document.getElementById('btnEntrar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Entrando...';
+
+  var user = document.getElementById('iptUsuario').value;
+  var pass = document.getElementById('iptSenha').value;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar';
+      
+      if (res && res.sucesso) {
+        usuarioLogado = res.usuario;
+        localStorage.setItem('ibpaz_sessao', JSON.stringify(usuarioLogado));
+        iniciarAplicacao();
+      } else {
+        alert(res ? res.mensagem : "Erro ao efetuar login.");
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar';
+      alert("Erro de comunicação com o servidor: " + (err.message || err));
+    })
+    .autenticarUsuario(user, pass);
+}
+
+ // FAZ O LOGOUT (Sem recarregar a página)
+function fazerLogout() {
+  localStorage.removeItem('ibpaz_sessao');
+  usuarioLogado = null;
+
+  var appPrincipal = document.getElementById('appPrincipal');
+  if (appPrincipal) {
+    appPrincipal.style.display = 'none';
+  }
+
+  var navMobile = document.querySelector('.nav-mobile');
+  if (navMobile) {
+    navMobile.style.setProperty('display', 'none', 'important');
+  }
+
+  var iptUser = document.getElementById('iptUsuario');
+  var iptPass = document.getElementById('iptSenha');
+  if (iptUser) iptUser.value = '';
+  if (iptPass) iptPass.value = '';
+
+  var telaLogin = document.getElementById('telaLogin');
+  if (telaLogin) {
+    telaLogin.style.setProperty('display', 'flex', 'important');
+  }
+}
+
+  // INICIA A APLICAÇÃO
+function iniciarAplicacao() {
+  try {
+    document.getElementById('telaLogin').style.display = 'none';
+    document.getElementById('appPrincipal').style.display = 'block';
+    
+    if (usuarioLogado) {
+      var elNome = document.getElementById('nomeUsuarioHome');
+      if (elNome) elNome.innerText = usuarioLogado.nome;
+      
+      var elResp = document.getElementById('estudio_responsavel');
+      if (elResp) {
+        var grupoTxt = usuarioLogado.grupo ? ' (' + usuarioLogado.grupo + ')' : '';
+        elResp.value = usuarioLogado.nome + grupoTxt;
+      }
+      
+      configurarNivelAcesso();
+      carregarAvisoHome();
+      carregarEscalasHome();
+      carregarAgendaEstudio();
+      
+      var hoje = new Date();
+      var mm = String(hoje.getMonth() + 1).padStart(2, '0');
+      var yyyy = String(hoje.getFullYear());
+      
+      var fMes = document.getElementById('escala_filtro_mes');
+      var fAno = document.getElementById('escala_filtro_ano');
+      if (fMes) fMes.value = mm;
+      if (fAno) fAno.value = yyyy;
+    }
+  } catch (err) {
+    console.error("Erro na inicialização da interface:", err);
+  }
+}
+
+  // CONTROLA PERMISSÕES DE ACESSO
+  function configurarNivelAcesso() {
+    var btnGestao = document.getElementById('btnMenuGestao');
+    if (btnGestao) {
+      if (usuarioLogado.nivel === 3) {
+        btnGestao.style.display = 'none';
+      } else {
+        btnGestao.style.display = 'flex';
+      }
+    }
+  }
+
+  // NAVEGAÇÃO ENTRE ABAS
+  function navegarPara(secaoId) {
+    var secoes = document.querySelectorAll('.app-section');
+    secoes.forEach(function(s) { s.style.display = 'none'; });
+    
+    var destino = document.getElementById(secaoId);
+    if (destino) destino.style.display = 'block';
+    
+    var botoes = document.querySelectorAll('.nav-item-mobile');
+    botoes.forEach(function(b) { b.classList.remove('active'); });
+    
+    if (secaoId === 'secaoHome' && botoes[0]) botoes[0].classList.add('active');
+    if (secaoId === 'secaoEstudio' && botoes[1]) botoes[1].classList.add('active');
+    if (secaoId === 'secaoGestao' && botoes[2]) botoes[2].classList.add('active');
+  }
+
+      function carregarAvisoHome() {
+        google.script.run
+          .withSuccessHandler(function(listaAvisos) {
+            var container = document.getElementById('containerAvisosHome');
+            if (!listaAvisos || listaAvisos.length === 0) {
+              container.innerHTML = '';
+              return;
+            }
+            var html = '';
+            listaAvisos.forEach(function(aviso) {
+              var midiaHtml = '';
+             
+              if (aviso.midia && aviso.midia !== '') {
+                if (aviso.tipoMidia === 'imagem' || aviso.midia.indexOf('googleusercontent') !== -1) {
+                  midiaHtml = '<div class="banner-media-container">' +
+                                '<img src="' + aviso.midia + '" class="banner-img-preview" alt="Mídia">' +
+                              '</div>';
+                } else if (aviso.tipoMidia === 'audio') {
+                  midiaHtml = '<div class="banner-media-container p-2 bg-light"><audio controls class="w-100"><source src="' + aviso.midia + '"></audio></div>';
+                } else if (aviso.tipoMidia === 'video') {
+                  midiaHtml = '<div class="banner-media-container"><iframe src="' + aviso.midia + '" class="w-100 h-100" allow="autoplay"></iframe></div>';
+                }
+              }
+              html += '<div class="banner-aviso">' +
+                        '<div class="banner-body">' +
+                          '<div class="banner-badge">' +
+                            '<i class="fa-solid fa-bullhorn"></i> DESTAQUE #' + aviso.id +
+                          '</div>' +
+                          '<p class="banner-texto">' + aviso.texto + '</p>' +
+                        '</div>' +
+                        midiaHtml +
+                      '</div>';
+            });
+            container.innerHTML = html;
+          })
+          .buscarConfigAviso();
+      }
+
+      function carregarEscalasHome() {
+        google.script.run
+          .withSuccessHandler(function(listaEscalas) {
+            var container = document.getElementById('containerEscalasHome') || document.getElementById('listaEscalasMes');
+            if (!container) return;
+           
+            if (!listaEscalas || listaEscalas.length === 0) {
+              container.innerHTML = '<div class="col-12"><p class="text-muted small">Nenhuma escala agendada para este mês.</p></div>';
+              return;
+            }
+            var grupos = {};
+           
+            listaEscalas.forEach(function(item) {
+              var nomeGrupo = item.grupoNome || 'Grupo Não Localizado';
+             
+              if (!grupos[nomeGrupo]) {
+                grupos[nomeGrupo] = {
+                  nome: nomeGrupo,
+                  lider: item.lider || 'Não informado',
+                  telefone: item.telefone || '',
+                  cor: item.cor || '#0d6efd',
+                  cultos: []
+                };
+              }
+             
+              grupos[nomeGrupo].cultos.push({
+                data: item.data,
+                hora: item.hora,
+                tipoCulto: item.tipoCulto,
+                repertorio: item.repertorio || []
+              });
+            });
+
+            var html = '<div class="row g-3">';
+            Object.keys(grupos).forEach(function(chave) {
+              var g = grupos[chave];
+              var telLimpo = g.telefone ? g.telefone.replace(/\D/g, '') : '';
+              var linkTel = telLimpo ? 'https://wa.me/55' + telLimpo : '#';
+              var cultosHtml = '<div class="row g-2 mt-1">';
+             
+              g.cultos.forEach(function(c) {
+                var infoData = (c.data || '') + (c.hora ? ' às ' + c.hora : '') + (c.tipoCulto ? ' (' + c.tipoCulto + ')' : '');
+               
+                var musicasHtml = '';
+                if (c.repertorio.length > 0) {
+                  c.repertorio.forEach(function(m) {
+                    musicasHtml += '<div class="small text-muted"><i class="fa-solid fa-music me-1 style-icon"></i>' + m + '</div>';
+                  });
+                } else {
+                  musicasHtml = '<div class="small text-muted fstr-italic">Sem repertório</div>';
+                }
+                cultosHtml += `
+                  <div class="col-md-6 col-12">
+                    <div class="p-2 border rounded bg-light h-100">
+                      <div class="fw-bold mb-1" style="font-size: 13px;">
+                        <i class="fa-regular fa-calendar-check me-1" style="color: ${g.cor};"></i> ${infoData}
+                      </div>
+                      <div class="ps-2 border-start border-2 style-repertorio-box">
+                        <span class="d-block text-uppercase text-secondary fw-bold" style="font-size: 10px;">Repertório:</span>
+                        ${musicasHtml}
+                      </div>
+                    </div>
+                  </div>`;
+              });
+              cultosHtml += '</div>';
+              html += `
+                <div class="col-12">
+                  <div class="card border-0 shadow-sm rounded-3 p-3 mb-3" style="border-top: 5px solid ${g.cor} !important;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-users-rectangle fs-4" style="color: ${g.cor} !important;"></i>
+                        <h5 class="fw-bold m-0" style="color: ${g.cor} !important;">${g.nome}</h5>
+                      </div>
+                      <div class="small text-end">
+                        <span class="text-muted"><strong>Líder:</strong> ${g.lider}</span>
+                        ${g.telefone ? `
+                          <a href="${linkTel}" target="_blank" class="text-success text-decoration-none fw-bold ms-2">
+                            <i class="fa-brands fa-whatsapp me-1"></i>${g.telefone}
+                          </a>
+                        ` : ''}
+                      </div>
+                    </div>
+                    <div class="border-top pt-2">
+                      <span class="text-muted fw-bold d-block mb-1" style="font-size: 11px; letter-spacing: 0.5px;">CULTOS & REPERTÓRIOS:</span>
+                      ${cultosHtml}
+                    </div>
+                  </div>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+          })
+          .buscarEscalasDoMes();
+      }
+
+      function salvarAgendamentoEstudio(e) {
+        e.preventDefault();
+        var dados = {
+          data: document.getElementById('estudio_data').value,
+          inicio: document.getElementById('estudio_inicio').value,
+          fim: document.getElementById('estudio_fim').value,
+          responsavelId: usuarioLogado.id
+        };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert(res.mensagem);
+            document.getElementById('formAgendarEstudio').reset();
+            document.getElementById('estudio_responsavel').value = usuarioLogado.nome;
+            carregarAgendaEstudio();
+          })
+          .agendarHorarioEstudio(dados);
+      }
+
+      function carregarAgendaEstudio() {
+  google.script.run
+    .withSuccessHandler(function(agenda) {
+      var container = document.getElementById('listaAgendaEstudio');
+      if (!agenda || agenda.length === 0) {
+        container.innerHTML = '<span class="text-muted small">Nenhum ensaio agendado.</span>';
+        return;
+      }
+      var html = '';
+      agenda.forEach(function(a) {
+        var respExibicao = a.grupo ? a.responsavelNome + ' (' + a.grupo + ')' : a.responsavelNome;
+
+        html += '<div class="p-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 12px;">' +
+                  '<div>' +
+                    '<strong>' + a.data + '</strong> (' + a.inicio + ' - ' + a.fim + ')<br>' +
+                    '<span class="text-muted">' + respExibicao + '</span>' +
+                  '</div>' +
+                  (a.responsavelTelefone ? '<a href="https://wa.me/' + a.responsavelTelefone + '" target="_blank" class="btn btn-sm btn-outline-success border-0"><i class="fa-brands fa-whatsapp"></i></a>' : '') +
+                '</div>';
+      });
+      container.innerHTML = html;
+    })
+    .buscarAgendaEstudio();
+}
+
+      function salvarIndisponibilidadeForm(e) {
+        e.preventDefault();
+        var dt = document.getElementById('indisp_data').value;
+        var just = document.getElementById('indisp_justificativa').value;
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert(res.mensagem);
+            document.getElementById('formIndisponibilidade').reset();
+          })
+          .registrarIndisponibilidade(usuarioLogado.id, dt, just);
+      }
+
+      function carregarIndisponiveisDoMesAtual() {
+        var mm = document.getElementById('escala_filtro_mes').value;
+        var yyyy = document.getElementById('escala_filtro_ano').value;
+        google.script.run
+          .withSuccessHandler(function(lista) {
+            var container = document.getElementById('listaIndisponiveisData');
+            if (lista.length === 0) {
+              container.innerHTML = '<li class="text-muted">Nenhum bloqueio para este mês.</li>';
+              return;
+            }
+            var html = '';
+            lista.forEach(function(item) {
+              html += '<li><strong>' + item.usuarioNome + '</strong> (' + item.data + '): ' + item.justificativa + '</li>';
+            });
+            container.innerHTML = html;
+          })
+          .buscarIndisponiveisPorMes(mm, yyyy);
+        carregarOpcoesMontarEscala();
+      }
+
+      function carregarOpcoesMontarEscala() {
+        google.script.run.withSuccessHandler(function(grupos) {
+          var selectGrp = document.getElementById('escala_grupo');
+          selectGrp.innerHTML = '<option value="">Selecione o grupo...</option>';
+          grupos.forEach(function(g) {
+            selectGrp.innerHTML += '<option value="' + g.id + '">' + g.nome + '</option>';
+          });
+        }).buscarTodosGrupos();
+
+        google.script.run.withSuccessHandler(function(musicas) {
+          var containerMus = document.getElementById('containerCheckMusicas');
+          if (musicas.length === 0) {
+            containerMus.innerHTML = '<span class="text-muted">Nenhuma música cadastrada.</span>';
+            return;
+          }
+          var html = '';
+          musicas.forEach(function(m) {
+            html += '<div class="form-check mb-1">' +
+                      '<input class="form-check-input chk-musica" type="checkbox" value="' + m.id + '" id="mus_' + m.id + '">' +
+                      '<label class="form-check-label" for="mus_' + m.id + '">' +
+                        m.titulo + ' <span class="text-muted">(' + m.artista + ')</span>' +
+                      '</label>' +
+                    '</div>';
+          });
+          containerMus.innerHTML = html;
+        }).buscarTodasMusicas();
+      }
+
+      function ajustarSeletorHorario(val) {
+        var iptHora = document.getElementById('escala_hora');
+        if (val === 'outro') {
+          iptHora.classList.remove('d-none');
+          iptHora.required = true;
+        } else {
+          iptHora.classList.add('d-none');
+          iptHora.required = false;
+          iptHora.value = val;
+        }
+      }
+
+      function salvarNovaEscalaForm(e) {
+        e.preventDefault();
+        var horaFinal = document.getElementById('escala_hora_predefinida').value;
+        if (horaFinal === 'outro') {
+          horaFinal = document.getElementById('escala_hora').value;
+        }
+        var musicasSelec = [];
+        document.querySelectorAll('.chk-musica:checked').forEach(function(c) { musicasSelec.push(c.value); });
+        var dadosEscala = {
+          data: document.getElementById('escala_data').value,
+          hora: horaFinal,
+          tipoCulto: document.getElementById('escala_tipo').value,
+          grupoId: document.getElementById('escala_grupo').value,
+          repertorio: musicasSelec
+        };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert(res.mensagem);
+            document.getElementById('formCriarEscala').reset();
+            carregarEscalasHome();
+          })
+          .criarNovaEscala(dadosEscala);
+      }
+
+      function carregarListaIntegrantes() {
+        const container = document.getElementById("listaIntegrantesEquipe");
+        if (!container) return;
+        container.innerHTML = `
+          <div class="text-center py-3 text-muted small">
+            <i class="fa-solid fa-spinner fa-spin me-1"></i> Carregando equipe...
+          </div>
+        `;
+        google.script.run
+          .withSuccessHandler(function (usuarios) {
+            cacheIntegrantes = usuarios || [];
+            renderizarListaIntegrantes(usuarios);
+          })
+          .withFailureHandler(function (err) {
+            console.error("Erro ao carregar usuários:", err);
+            if (container) {
+              container.innerHTML = `<div class="text-danger small py-2 text-center">Erro ao carregar lista de usuários.</div>`;
+            }
+          })
+          .buscarTodosIntegrantes();
+      }
+
+      function renderizarListaIntegrantes(lista) {
+        const container = document.getElementById("listaIntegrantesEquipe");
+        if (!container) return;
+        if (!lista || !Array.isArray(lista) || lista.length === 0) {
+          container.innerHTML = '<div class="text-center py-3 text-muted small">Nenhum integrante cadastrado.</div>';
+          return;
+        }
+        let html = '';
+       
+        lista.forEach(item => {
+          const nome = item.nome || 'Sem Nome';
+          const telefone = item.telefone || '-';
+          const nivel = String(item.nivel || '3');
+          const funcao = item.funcao || 'Integrante';
+          let badgeNivel = '<span class="badge bg-secondary style-badge">Membro</span>';
+          if (nivel === '1') badgeNivel = '<span class="badge bg-danger style-badge">Admin</span>';
+          if (nivel === '2') badgeNivel = '<span class="badge bg-primary style-badge">Líder</span>';
+          html += `
+            <div class="d-flex justify-content-between align-items-center p-2 border-bottom hover-bg-light">
+              <div class="text-truncate me-2">
+                <strong class="d-block text-dark text-truncate mb-0" style="font-size: 13px;">${nome}</strong>
+                <small class="text-muted d-block text-truncate" style="font-size: 11px;">
+                  <i class="fa-solid fa-music text-secondary me-1"></i>${funcao}
+                </small>
+                <small class="text-muted" style="font-size: 10px;">
+                  <i class="fa-brands fa-whatsapp text-success me-1"></i>${telefone}
+                </small>
+              </div>
+              <div class="text-end">
+                ${badgeNivel}
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      }
+
+      function executarFiltroEquipeLocal() {
+        const input = document.getElementById("inputBuscaEquipe");
+        if (!input) return;
+        const termo = input.value.toLowerCase().trim();
+        if (!termo) {
+          renderizarListaIntegrantes(cacheIntegrantes);
+          return;
+        }
+        const filtrados = cacheIntegrantes.filter(item => {
+          const nome = String(item.nome || item[1] || '').toLowerCase();
+          const funcao = String(item.funcao || item[6] || '').toLowerCase();
+          const telefone = String(item.telefone || item[4] || '').toLowerCase();
+          return nome.includes(termo) || funcao.includes(termo) || telefone.includes(termo);
+        });
+        renderizarListaIntegrantes(filtrados);
+      }
+
+      function salvarNovoIntegrante(e) {
+        e.preventDefault();
+        var dados = {
+          nome: document.getElementById('int_nome').value,
+          usuario: document.getElementById('int_usuario').value,
+          senha: document.getElementById('int_senha').value,
+          telefone: document.getElementById('int_telefone').value,
+          nivel: document.getElementById('int_nivel').value,
+          funcao: document.getElementById('int_funcao').value
+        };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert(res.mensagem);
+            document.getElementById('formCadastrarIntegrante').reset();
+            carregarListaIntegrantes();
+          })
+          .cadastrarNovoUsuario(dados);
+      }
+
+      function carregarTelaGrupos() {
+        const containerLista = document.getElementById("containerListaGrupos");
+        if (containerLista) {
+          containerLista.innerHTML = '<span class="text-muted small"><i class="fa-solid fa-spinner fa-spin me-1"></i> Carregando grupos...</span>';
+        }
+        google.script.run
+          .withSuccessHandler(function (usuarios) {
+            listaIntegrantesParaGrupos = Array.isArray(usuarios) ? usuarios : [];
+            carregarListaGruposCadastrados();
+          })
+          .withFailureHandler(function (err) {
+            console.error("Erro ao carregar lista de usuários:", err);
+            carregarListaGruposCadastrados();
+          })
+          .buscarTodosIntegrantes();
+      }
+
+      function carregarListaGruposCadastrados() {
+        google.script.run
+          .withSuccessHandler(function(grupos) {
+            var container = document.getElementById('containerListaGrupos');
+            if (!container) return;
+            if (!grupos || grupos.length === 0) {
+              container.innerHTML = '<span class="text-muted small">Nenhum grupo cadastrado.</span>';
+              return;
+            }
+            var html = '';
+            grupos.forEach(function(g) {
+              html += '<div class="p-2 border-bottom d-flex justify-content-between align-items-center" style="font-size: 13px;">' +
+                        '<div>' +
+                          '<strong style="color:' + (g.cor || '#0d6efd') + ';">' + g.nome + '</strong>' +
+                          '<div class="text-muted small">' + (g.membros ? g.membros.length : 0) + ' membro(s)</div>' +
+                        '</div>' +
+                        '<span class="badge ' + (g.status === 'Inativo' ? 'bg-secondary' : 'bg-success') + '">' + (g.status || 'Ativo') + '</span>' +
+                      '</div>';
+            });
+            container.innerHTML = html;
+          })
+          .buscarTodosGrupos();
+      }
+
+      function adicionarLinhaMembro(idUserSelecionado = '', funcaoInput = '') {
+        const container = document.getElementById("listaMembrosContainer");
+        if (!container) return;
+        const divId = 'membro_row_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        let opcoesSelect = '<option value="">Selecione o Integrante...</option>';
+       
+        if (listaIntegrantesParaGrupos && listaIntegrantesParaGrupos.length > 0) {
+          listaIntegrantesParaGrupos.forEach(usr => {
+            const id = usr.id || usr[0];
+            const nome = usr.nome || usr[1] || 'Sem Nome';
+            const selected = String(id) === String(idUserSelecionado) ? 'selected' : '';
+            opcoesSelect += `<option value="${id}" ${selected}>${nome}</option>`;
+          });
+        } else {
+          opcoesSelect += '<option value="" disabled>Nenhum integrante cadastrado</option>';
+        }
+       
+        const html = `
+          <div class="row g-2 mb-2 align-items-center" id="${divId}">
+            <div class="col-6">
+              <select class="form-select form-select-sm grupo-membro-select">
+                ${opcoesSelect}
+              </select>
+            </div>
+            <div class="col-5">
+              <input type="text" class="form-control form-control-sm grupo-membro-funcao" placeholder="Função (Ex: Teclado)" value="${funcaoInput}">
+            </div>
+            <div class="col-1 text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger border-0 p-0" onclick="document.getElementById('${divId}').remove()">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+      }
+
+      function novoGrupoForm() {
+        document.getElementById('grupoId').value = '';
+        document.getElementById('grupoNome').value = '';
+        document.getElementById('grupoCor').value = '#0d6efd';
+        document.getElementById('grupoStatus').value = 'Ativo';
+       
+        const container = document.getElementById('listaMembrosContainer');
+        if (container) container.innerHTML = '';
+       
+        const titulo = document.getElementById('tituloTelaGrupo');
+        if (titulo) titulo.innerText = 'Criar Novo Grupo';
+       
+        const card = document.getElementById('cardFormGrupo');
+        if (card) card.style.display = 'block';
+        if (!listaIntegrantesParaGrupos || listaIntegrantesParaGrupos.length === 0) {
+          google.script.run
+            .withSuccessHandler(function (usuarios) {
+              listaIntegrantesParaGrupos = Array.isArray(usuarios) ? usuarios : [];
+              adicionarLinhaMembro();
+            })
+            .buscarTodosIntegrantes();
+        } else {
+          adicionarLinhaMembro();
+        }
+      }
+
+      function fecharFormGrupo() {
+        document.getElementById('cardFormGrupo').style.display = 'none';
+      }
+
+      function salvarGrupo() {
+        const id = document.getElementById('grupoId').value;
+        const nome = document.getElementById('grupoNome').value;
+        const cor = document.getElementById('grupoCor').value;
+        const status = document.getElementById('grupoStatus').value;
+        if (!nome) {
+          alert('Por favor, informe o nome do grupo.');
+          return;
+        }
+        const membros = [];
+        const rows = document.querySelectorAll('#listaMembrosContainer .row');
+        rows.forEach(row => {
+          const integrante = row.querySelector('.grupo-membro-select').value;
+          const funcao = row.querySelector('.grupo-membro-funcao').value;
+          if (integrante) {
+            membros.push({ integrante, funcao });
+          }
+        });
+        const dadosGrupo = { id, nome, cor, status, membros };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert('Grupo salvo com sucesso!');
+            fecharFormGrupo();
+            carregarTelaGrupos();
+          })
+          .withFailureHandler(function(err) {
+            alert('Erro ao salvar grupo: ' + err.message);
+          })
+          .salvarGrupoBackend(dadosGrupo);
+      }
+
+      function carregarListaMusicas() {
+        google.script.run
+          .withSuccessHandler(function(musicas) {
+            var container = document.getElementById('listaMusicasRepertorio');
+            if (musicas.length === 0) {
+              container.innerHTML = '<span class="text-muted small">Nenhuma música no repertório.</span>';
+              return;
+            }
+            var html = '';
+            musicas.forEach(function(m) {
+              html += '<div class="p-2 border-bottom" style="font-size: 12px;">' +
+                        '<strong>' + m.titulo + '</strong> - ' + m.artista + ' (' + (m.tom || 'N/D') + ')<br>' +
+                        '<span class="text-muted">' + (m.sentimento || '') + (m.cifra ? ' | <a href="' + m.cifra + '" target="_blank">Cifra</a>' : '') + '</span>' +
+                      '</div>';
+            });
+            container.innerHTML = html;
+          })
+          .buscarTodasMusicas();
+      }
+
+      function salvarNovaMusicaForm(e) {
+        e.preventDefault();
+        var dados = {
+          titulo: document.getElementById('mus_titulo').value,
+          tom: document.getElementById('mus_tom').value,
+          artista: document.getElementById('mus_artista').value,
+          palavraChave: document.getElementById('mus_palavra').value,
+          sentimento: document.getElementById('mus_sentimento').value,
+          cifra: document.getElementById('mus_cifra').value,
+          video: document.getElementById('mus_video').value
+        };
+        google.script.run
+          .withSuccessHandler(function(res) {
+            alert(res.mensagem);
+            document.getElementById('formCadastrarMusica').reset();
+            carregarListaMusicas();
+          })
+          .cadastrarNovaMusica(dados);
+      }
+
+      function salvarAvisoComAnexo(e) {
+        e.preventDefault();
+        var btn = document.getElementById('btnSalvarAviso');
+        btn.disabled = true;
+        btn.innerHTML = 'Publicando...';
+        var slot = document.getElementById('aviso_slot_input').value;
+        var texto = document.getElementById('aviso_texto_input').value;
+        var fileInput = document.getElementById('aviso_arquivo_input');
+        var file = fileInput.files[0];
+        if (file) {
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            var base64 = evt.target.result;
+            google.script.run
+              .withSuccessHandler(function(res) {
+                btn.disabled = false;
+                btn.innerHTML = 'Publicar Banner na Home';
+                alert(res.mensagem);
+                document.getElementById('formGerenciarAviso').reset();
+                carregarAvisoHome();
+              })
+              .withFailureHandler(function(err) {
+                btn.disabled = false;
+                btn.innerHTML = 'Publicar Banner na Home';
+                alert("Erro ao salvar: " + err.message);
+              })
+              .salvarConfigAviso(slot, texto, base64, file.name, file.type);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              btn.disabled = false;
+              btn.innerHTML = 'Publicar Banner na Home';
+              alert(res.mensagem);
+              document.getElementById('formGerenciarAviso').reset();
+              carregarAvisoHome();
+            })
+            .salvarConfigAviso(slot, texto, "", "", "");
+        }
+      }
+  </script>
+  </body>
+</html>
