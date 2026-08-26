@@ -1,47 +1,102 @@
-# Ministério de Louvor - IBPaz
+# StockFlow BH · Painel Logístico
 
-App de gestão do ministério de louvor: escalas, grupos, integrantes, repertório musical, agendamento de estúdio e avisos na home. Rodando como Google Apps Script Web App, com banco de dados em uma planilha do Google Sheets.
+Painel de armazenagem, expedição e conferência de cargas do CD13, construído a
+partir da planilha `Estoque_BH.xlsx`. É um arquivo único (`index.html`) — sem
+build, sem servidor, sem dependências para instalar. Basta abrir no navegador.
 
-## Arquivos deste repositório
+## Como usar
 
-- `Index.html` — front-end (interface do usuário)
-- `Code.gs` — back-end (lógica de negócio e acesso à planilha)
-- `appsscript.json` — manifesto do projeto Apps Script
+- **Abrir o painel**: dê duplo clique em `index.html`, ou abra pelo navegador
+  (`Arquivo → Abrir`). Também funciona publicado no GitHub Pages, se você
+  quiser um link compartilhável (veja a seção *Publicar com GitHub Pages*).
+- **Atualizar os dados**: botão **Importar Excel**, no topo do painel. Ele lê
+  qualquer planilha no mesmo formato de `Estoque_BH.xlsx` (aba `Estoque` +
+  abas `Carga DD-MM-AA` + aba com "SAP" no nome) e recalcula tudo. Os dados
+  ficam só na memória do navegador — nada é enviado para fora.
+- **Exportar**: botão **Exportar Excel** gera um `.xlsx` com o estado atual
+  (útil depois de importar uma planilha e antes de fechar a aba).
+- **Voltar ao original**: botão **Dados originais** restaura os dados que
+  vieram embutidos neste `index.html` (a última planilha que eu processei).
 
-## Novidade desta versão: atualização automática
+## Estrutura do arquivo
 
-Foi adicionado um controle de versão (`APP_VERSION` em `Code.gs`) que resolve o problema de quem instala o app (PWA ou APK) ficar preso numa versão antiga em cache. A cada abertura, o app pergunta ao servidor qual é a versão publicada e, se for diferente da salva no aparelho, recarrega sozinho pegando o código mais recente.
+Tudo mora em `index.html`, em três blocos, nessa ordem:
 
-**Isso só funciona se você seguir o fluxo de deploy corretamente — veja abaixo.**
+1. `<style>` — visual (cores, tipografia, layout). Ver `--cd13`, `--quarentena`,
+   `--reembalar`, `--descarte` no topo para as cores de cada depósito.
+2. `<script type="application/json" id="embedded-data">` — os dados da última
+   planilha importada, em JSON puro. Normalmente você não edita isso à mão;
+   ele é substituído quando alguém usa "Importar Excel".
+3. `<script>` — toda a lógica (cálculos, tabelas, gráficos, textos da tela).
 
-## Como publicar (todas as vezes, sem exceção)
+## Como editar uma frase de um card
 
-1. Suba o número da constante `APP_VERSION` no topo de `Code.gs` (ex: `"1.0.1"` → `"1.0.2"`).
-2. No editor do Apps Script: **Implantar → Gerenciar implantações**.
-3. Clique no ícone de lápis na implantação **já existente** (a que gerou a URL que todo mundo já usa).
-4. No campo "Versão", selecione **Nova versão**, escreva uma descrição curta e clique em **Implantar**.
-5. Confirme que a URL exibida é a mesma de sempre — **nunca clique em "Nova implantação"** para publicar uma atualização, isso gera uma URL diferente e quebra o app de quem já instalou.
+**Todo texto que aparece na tela existe em português, como string, dentro do
+terceiro bloco (`<script>`).** Não é código minificado nem ofuscado — é só
+procurar (Ctrl+F / Cmd+F) pelo texto exatamente como ele aparece no painel.
 
-Feito isso, na próxima vez que qualquer pessoa abrir o app instalado, ele detecta a mudança de versão e se atualiza sozinho, sem precisar desinstalar nada.
+Exemplo: para mudar o título do card "Resumo do período" —
 
-## Subindo para o GitHub
+1. Abra `index.html` num editor de texto (ou no editor web do GitHub).
+2. Ctrl+F por `Resumo do período`.
+3. Você vai cair numa linha como:
+   ```html
+   <div class="card-head"><h3>Resumo do período</h3></div>
+   ```
+4. Troque só o texto entre `<h3>` e `</h3>`. Salve.
 
-O GitHub aqui serve como controle de versão do código-fonte (histórico, backup, colaboração) — o Google Apps Script continua sendo onde o app efetivamente roda e é publicado. Duas formas de manter os dois sincronizados:
+Outro exemplo, um KPI do topo (esses ficam todos juntos, fáceis de achar
+buscando por `kpiCard(`):
+```js
+kpiCard('Cargas no período', fmtInt(k.cargasCount), `${filteredCargas()...}`, 'truck', 'var(--brand)', 0),
+```
+O primeiro texto entre aspas (`'Cargas no período'`) é o título do card — pode
+trocar à vontade. O texto entre crases (`` ` ``) logo depois é a linha
+pequena embaixo do número; tem `${...}` no meio, que são os valores
+calculados — não apague essa parte, só o texto ao redor.
 
-**Manual (mais simples):** sempre que editar o código no Apps Script, copie os arquivos atualizados para a pasta local do seu repositório Git e faça `git add . && git commit -m "..." && git push`.
+### Onde fica cada card (para não precisar catar um por um)
 
-**Automatizada (opcional, mais robusta):** use a ferramenta `clasp` da própria Google (`npm install -g @google/clasp`) para versionar e até fazer push do GitHub diretamente para o Apps Script. Se quiser, posso te preparar o passo a passo do clasp depois.
+| Card na tela | Procure por | Função |
+|---|---|---|
+| Os 6 KPIs do topo | `kpiCard(` | `renderKPIs` |
+| Nomes/descrições das abas (CD13, Quarentena...) | `const DEP_GROUPS` | topo do arquivo |
+| "% de avarias por dia de carga" | `de avarias por dia de carga` | `renderGeral` |
+| "SKUs com mais avarias" | `SKUs com mais avarias` | `renderGeral` |
+| "Estoque por depósito" | `Estoque por depósito` | `renderGeral` |
+| "Ocupação do parque de paletes" | `parque de paletes` | `renderGeral` |
+| "Resumo do período" (gráfico de pizza) | `Resumo do período` | `renderGeral` |
+| "Mapa de racks..." | `Mapa de racks` | `renderDepPanel` |
+| Ranking de validade | `Ranking de validade` | `renderValidadeTab` |
+| "Linhas com divergência" | `Linhas com divergência` | `renderDivergenciaTab` |
+| "Resumo por código (SKU)" / "Detalhe por lote" | `Resumo por código` | `renderSapTab` |
+| Textos dos botões do topo (Importar/Exportar/Dados originais) | `btn-import`, `btn-export`, `btn-reset` | topo do `<body>` |
 
-## Empacotando como app instalável
+### O que evitar mexer sem querer
 
-### Android (APK)
-Como você já tem esse fluxo funcionando, a única regra nova é: sempre que você publicar uma atualização seguindo os passos acima, **não precisa gerar um APK novo** — o APK é só um "invólucro" que abre a URL do Apps Script dentro de uma WebView. Como a URL não muda e o app agora se auto-atualiza, o mesmo APK instalado continua funcionando com o conteúdo mais recente.
+- Qualquer coisa entre `${` e `}` — é código, não texto (calcula um número).
+- As crases `` ` `` que abrem e fecham um bloco de texto — se apagar uma sem
+  querer, a página para de funcionar. Se isso acontecer, dá pra comparar com
+  uma versão anterior no histórico do GitHub e ver o que mudou.
+- Nomes como `deposito`, `endereco`, `sku` dentro do código de cálculo — esses
+  não aparecem na tela, são a lógica interna.
 
-### iOS (IPA)
-Aqui preciso ser direto: não existe forma de gerar um instalador iOS sem passar por uma dessas rotas — não é algo que eu consiga produzir neste ambiente:
+Se uma edição quebrar a página (ela fica em branco ou trava), abra o
+DevTools do navegador (F12 → aba *Console*) para ver o erro, ou simplesmente
+reverta o commit no GitHub.
 
-- **Xcode em um Mac** — o caminho tradicional. Ferramentas como o [PWABuilder](https://www.pwabuilder.com/) conseguem gerar o projeto Xcode pronto a partir da URL do seu app, mas alguém ainda precisa abrir esse projeto num Mac com Xcode instalado para compilar e assinar.
-- **Conta de desenvolvedor Apple** (US$ 99/ano) — obrigatória tanto para instalar em iPhones de terceiros quanto para publicar na App Store.
-- **Serviços de build na nuvem** (ex: Codemagic, Ionic Appflow) — compilam o `.ipa` sem você precisar ter um Mac, mas ainda exigem a conta de desenvolvedor Apple para assinar o app.
+## Publicar com GitHub Pages (opcional)
 
-Se seu grupo usa iPhone, a alternativa mais simples e sem custo é continuar como PWA: a pessoa abre a URL no Safari e usa **Compartilhar → Adicionar à Tela de Início**. Fica com ícone próprio e tela cheia, sem barra do navegador — só não passa pela App Store.
+Se quiser um link público (tipo `https://seuusuario.github.io/stockflow-bh/`)
+em vez de abrir o arquivo local:
+
+1. No repositório, vá em **Settings → Pages**.
+2. Em "Source", selecione a branch `main` e a pasta `/ (root)`.
+3. Salve. Em alguns minutos o link fica disponível.
+
+Como os dados ficam embutidos no próprio `index.html` (não são buscados de
+um servidor), o Pages funciona perfeitamente mesmo sendo 100% estático.
+
+## Histórico de mudanças
+
+Ver `CHANGELOG.md`.

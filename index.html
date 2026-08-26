@@ -534,12 +534,13 @@ function computeSapConfronto(){
   const wmsSku = new Map();  // key sku -> qtd
   const descBySku = new Map();
   (state.data.estoque||[]).forEach(raw=>{
-    // Avaria/Reembalar ENTRAM aqui — testado com dados reais: o SAP conta essas
-    // caixas dentro do saldo do SKU (produto avariado ainda não foi baixado do
-    // sistema), então excluir do total pioraria a reconciliação, não melhoraria.
-    // normaliza o SKU pra número sempre — se a planilha misturar células
-    // numéricas e em texto pra SKU, sem isso o mesmo produto vira duas
-    // entradas diferentes (3000001208 número ≠ "3000001208" texto)
+    // Soma TODOS os depósitos (CD13, Picking, Avaria, Reembalar, Quarentena).
+    // Testado com dados reais: o SAP não separa "CD13" de "avaria" no total dele
+    // — a caixa avariada continua contando no saldo do SAP até ser baixada do
+    // sistema. Comparar só o CD13 do físico contra o total (misturado) do SAP
+    // criava divergência falsa sempre que havia algo em avaria/reembalar/
+    // quarentena: ex. 10 no CD13 + 1 em avaria bate com SAP=11, mas SAP=11
+    // contra WMS-só-CD13=10 pareceria uma divergência de -1 que não existe.
     const r = {...raw, sku: Number(raw.sku)};
     const lote = r.lote==null||r.lote==='' ? null : r.lote;
     const key = r.sku+'|'+lote;
@@ -1386,7 +1387,7 @@ function renderSapTab(){
     <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
       <div>
         <h2>Confronto SAP × Físico</h2>
-        <p>Cruzamento do estoque físico (aba Estoque) contra o saldo do SAP, por código (SKU) e por lote. <b>Inclui as caixas de Avaria e Reembalar</b> no total do SKU — testamos e o SAP conta esse estoque como parte do saldo (produto avariado que ainda não foi baixado do sistema), então excluir pioraria a reconciliação. "Só o lote diverge" significa que o total do SKU bate — geralmente é lote gravado errado ou lotes do SAP consolidados numa única posição física, não perda real.</p>
+        <p>Cruzamento do estoque físico (aba Estoque, <b>todos os depósitos somados</b> — CD13, Picking, Avaria, Reembalar, Quarentena) contra o saldo do SAP, por código (SKU) e por lote. Precisa somar tudo dos dois lados porque o SAP não separa "CD13" de "avaria" no total dele — uma caixa avariada continua contando no saldo do SAP até ser baixada do sistema. Exemplo: 10 cx no CD13 + 1 cx em avaria bate com SAP=11; comparar só o CD13 (10) contra o SAP (11) pareceria uma divergência de -1 que não existe de verdade. "Só o lote diverge" significa que o total do SKU bate — geralmente é lote gravado errado ou lotes do SAP consolidados numa única posição física, não perda real.</p>
       </div>
       <div class="dep-hero-stats">
         <div class="dep-hero-stat"><b style="color:#8FE0B3">${fmtInt(skuOk)}</b><span>SKUs OK</span></div>
