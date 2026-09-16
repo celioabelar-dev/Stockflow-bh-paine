@@ -1823,28 +1823,34 @@ function parseEntradaFlatSheet(rows){
   const idxTotalPaletes = findCol(/total.*paletes?/i);
   const idxPaletesVazio = findCol(/paletes?\s*vazi/i);
 
-  const cargasFlat = [];
-  let atual = null;
+  // agrupa por NF de verdade (mapa), não por linhas vizinhas — o NF pode vir
+  // em branco por arrasto, repetido em toda linha, OU até intercalado com
+  // outras cargas (linhas de NFs diferentes de permeio); nenhum desses casos
+  // deve criar uma carga duplicada.
+  const porNf = new Map();
+  const ordemNf = [];
+  let ultimoNf = '';
   for(let i=headerIdx+1;i<rows.length;i++){
     const r = rows[i];
     if(!r) continue;
     const nfCell = idxNF>=0 ? r[idxNF] : null;
-    if(nfCell!=null && String(nfCell).trim()!==''){
-      atual = {
-        nf: String(nfCell).trim(),
+    const nfStr = (nfCell!=null && String(nfCell).trim()!=='') ? String(nfCell).trim() : ultimoNf;
+    ultimoNf = nfStr; // sustenta por arrasto quando a linha não repetir o NF
+    const skuCell = idxSku>=0 ? r[idxSku] : null;
+    if(skuCell==null || skuCell==='') continue;
+    if(!porNf.has(nfStr)){
+      porNf.set(nfStr, {
+        nf: nfStr,
         data: idxData>=0 ? parseDateCell(r[idxData]) : null,
         motorista: idxMotorista>=0 ? String(r[idxMotorista]||'').trim() : '',
         carro: idxCarro>=0 ? String(r[idxCarro]||'').trim() : '',
         totalPaletes: idxTotalPaletes>=0 ? parseNumberCell(r[idxTotalPaletes]) : 0,
         paletesVazio: idxPaletesVazio>=0 ? parseNumberCell(r[idxPaletesVazio]) : 0,
         items: []
-      };
-      cargasFlat.push(atual);
+      });
+      ordemNf.push(nfStr);
     }
-    const skuCell = idxSku>=0 ? r[idxSku] : null;
-    if(skuCell==null || skuCell==='') continue;
-    if(!atual){ atual = {nf:'', data:null, motorista:'', carro:'', totalPaletes:0, paletesVazio:0, items:[]}; cargasFlat.push(atual); }
-    atual.items.push({
+    porNf.get(nfStr).items.push({
       sku: Number(skuCell),
       descricao: idxDesc>=0 ? String(r[idxDesc]||'').trim() : '',
       categoria: 'SEM CATEGORIA',
@@ -1862,7 +1868,7 @@ function parseEntradaFlatSheet(rows){
       obs: idxObs>=0 ? (r[idxObs]||null) : null,
     });
   }
-  return cargasFlat;
+  return ordemNf.map(nf=>porNf.get(nf));
 }
 /* SAIDA segue o mesmo espírito das antigas abas de Carga: título (linha 0),
    metadados da transação (linha 1 — Ordem de Frete/Carro/Motorista/Data/
@@ -1906,15 +1912,20 @@ function parseSaidaFlatSheet(rows){
   const idxPesoTotalOF = findCol(/peso\s*total\s*(da\s*|do\s*)?of/i);
   const idxValorTotalOF = findCol(/valor\s*total\s*(da\s*|do\s*)?of/i);
 
-  const saidasFlat = [];
-  let atual = null;
+  const porOf = new Map();
+  const ordemOf = [];
+  let ultimoOf = '';
   for(let i=headerIdx+1;i<rows.length;i++){
     const r = rows[i];
     if(!r) continue;
     const ofCell = idxOF>=0 ? r[idxOF] : null;
-    if(ofCell!=null && String(ofCell).trim()!==''){
-      atual = {
-        ordemFrete: String(ofCell).trim(),
+    const ofStr = (ofCell!=null && String(ofCell).trim()!=='') ? String(ofCell).trim() : ultimoOf;
+    ultimoOf = ofStr;
+    const skuCell = idxSku>=0 ? r[idxSku] : null;
+    if(skuCell==null || skuCell==='') continue;
+    if(!porOf.has(ofStr)){
+      porOf.set(ofStr, {
+        ordemFrete: ofStr,
         carro: idxCarro>=0 ? String(r[idxCarro]||'').trim() : '',
         motorista: idxMotorista>=0 ? String(r[idxMotorista]||'').trim() : '',
         data: idxData>=0 ? parseDateCell(r[idxData]) : null,
@@ -1922,12 +1933,10 @@ function parseSaidaFlatSheet(rows){
         pesoTotalOF: idxPesoTotalOF>=0 ? parseNumberCell(r[idxPesoTotalOF]) : 0,
         valorTotalOF: idxValorTotalOF>=0 ? parseNumberCell(r[idxValorTotalOF]) : 0,
         items: []
-      };
-      saidasFlat.push(atual);
+      });
+      ordemOf.push(ofStr);
     }
-    const skuCell = idxSku>=0 ? r[idxSku] : null;
-    if(skuCell==null || skuCell==='') continue;
-    if(!atual){ atual = {ordemFrete:'', carro:'', motorista:'', data:null, qtdPalete:0, pesoTotalOF:0, valorTotalOF:0, items:[]}; saidasFlat.push(atual); }
+    const atual = porOf.get(ofStr);
     // Peso/Valor total OF podem vir repetidos em toda linha da saída (não só
     // na primeira) — se ainda não temos o valor, aproveita o que aparecer.
     if(!atual.pesoTotalOF && idxPesoTotalOF>=0) atual.pesoTotalOF = parseNumberCell(r[idxPesoTotalOF]);
@@ -1950,7 +1959,7 @@ function parseSaidaFlatSheet(rows){
       remessa: idxRemessa>=0 ? r[idxRemessa] : null,
     });
   }
-  return saidasFlat;
+  return ordemOf.map(of=>porOf.get(of));
 }
 function parseWorkbook(wb){
   const out = {estoque:[], cargas:[], saidas:[], enderecosVazios:[], paletesResumo: JSON.parse(JSON.stringify(state.data.paletesResumo))};
