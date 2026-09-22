@@ -3,2240 +3,1221 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StockFlow BH · Painel Logístico</title>
+<title>Painel de Roteirização — Corte de Estoque</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{
-  --bg:#EAEEF5;
-  --surface:#FFFFFF;
-  --surface-soft:#F4F6FB;
-  --ink:#10182B;
-  --ink-soft:#5B6472;
-  --ink-faint:#8891A0;
-  --line:#DEE3ED;
-  --line-soft:#EAEEF5;
-  --brand:#2952CC;
-  --brand-dark:#101B36;
-  --brand-soft:#E7EDFC;
-  --cd13:#0E7C86;
-  --cd13-soft:#DFF1F1;
-  --quarentena:#B7791F;
-  --quarentena-soft:#FBF0DC;
-  --reembalar:#6D4AAE;
-  --reembalar-soft:#EEE7F9;
-  --descarte:#B23A2F;
-  --descarte-soft:#FAE4E1;
-  --ok:#1E8E5A;
-  --ok-soft:#E1F3EA;
-  --radius:12px;
-  --radius-sm:8px;
-  --shadow-card:0 1px 2px rgba(16,24,43,.04), 0 1px 0 rgba(16,24,43,.03);
-  --shadow-pop:0 12px 32px rgba(16,24,43,.14);
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{
-  background:var(--bg);
-  color:var(--ink);
-  font-family:'Inter',system-ui,sans-serif;
-  font-size:14px;
-  line-height:1.45;
-  -webkit-font-smoothing:antialiased;
-}
-h1,h2,h3,.disp{font-family:'Space Grotesk',system-ui,sans-serif;}
-.mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
-button{font-family:inherit;}
-::selection{background:var(--brand-soft);color:var(--brand-dark);}
+  :root{
+    --navy-950:#0E1621;
+    --navy-900:#141F2E;
+    --navy-800:#1B2A3E;
+    --navy-700:#2A3E56;
+    --steel-500:#3E6E97;
+    --steel-400:#5B8CB8;
+    --amber-500:#E8871E;
+    --amber-100:#FCEBD4;
+    --teal-500:#1E9C77;
+    --teal-100:#DCF3EA;
+    --bg:#EEF1F5;
+    --panel:#FFFFFF;
+    --line:#E1E6ED;
+    --ink-900:#141B24;
+    --ink-600:#4B5768;
+    --ink-400:#8894A3;
+    --radius:10px;
+    --shadow: 0 1px 2px rgba(20,30,45,.06), 0 8px 24px -12px rgba(20,30,45,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink-900);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric: tabular-nums;}
+  .disp{font-family:'Space Grotesk',sans-serif;}
 
-@media (prefers-reduced-motion: reduce){
-  *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
-}
+  /* ---------- Header ---------- */
+  header{
+    background:linear-gradient(180deg,var(--navy-900),var(--navy-950));
+    color:#fff;
+    padding:22px 28px 20px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 64px);
+    pointer-events:none;
+  }
+  .header-row{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; position:relative;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--steel-400); margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:26px; margin:0;
+    letter-spacing:-.01em;
+  }
+  .subtitle{color:#93A2B5; font-size:13.5px; margin-top:6px; max-width:520px; line-height:1.5;}
 
-/* ---------- Topbar ---------- */
-.topbar{
-  background:var(--brand-dark);
-  color:#fff;
-  padding:14px 28px;
-  display:flex;
-  align-items:center;
-  gap:16px;
-  position:sticky;
-  top:0;
-  z-index:40;
-  box-shadow:0 2px 12px rgba(0,0,0,.18);
-}
-.brandmark{
-  width:38px;height:38px;flex:none;
-  border-radius:9px;
-  background:linear-gradient(155deg,#28407A,#101B36);
-  display:flex;align-items:center;justify-content:center;
-  border:1px solid rgba(255,255,255,.12);
-}
-.brand-copy{flex:1;min-width:0;}
-.brand-copy h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.1px;color:#fff;}
-.brand-copy p{font-size:12px;margin:1px 0 0;color:#AEB9D6;}
-.topbar-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
-.pill{
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.14);
-  color:#DCE3F5;
-  font-size:12px;
-  padding:6px 12px;
-  border-radius:999px;
-  white-space:nowrap;
-  font-weight:500;
-}
-.btn{
-  border:1px solid transparent;
-  border-radius:9px;
-  padding:8px 14px;
-  font-size:13px;
-  font-weight:600;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  transition:transform .12s ease, background .15s ease, border-color .15s ease;
-  white-space:nowrap;
-}
-.btn:active{transform:translateY(1px);}
-.btn-primary{background:var(--brand);color:#fff;}
-.btn-primary:hover{background:#3A62E0;}
-.btn-ghost{background:rgba(255,255,255,.06);color:#EAEFFC;border-color:rgba(255,255,255,.18);}
-.btn-ghost:hover{background:rgba(255,255,255,.14);}
-.btn-line{background:var(--surface);color:var(--ink);border-color:var(--line);}
-.btn-line:hover{border-color:var(--brand);color:var(--brand);}
-.btn svg{width:15px;height:15px;flex:none;}
-#file-input{display:none;}
+  .upload-cluster{display:flex; gap:10px; flex-wrap:wrap;}
+  .upload-slot{
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:var(--radius);
+    padding:10px 14px;
+    min-width:190px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .upload-slot.filled{border-color:var(--teal-500); background:rgba(30,156,119,.12);}
+  .upload-slot .lbl{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#8FA1B6; font-family:'JetBrains Mono',monospace;}
+  .upload-slot .fname{font-size:12.5px; color:#fff; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;}
+  .upload-slot input[type=file]{display:none;}
+  .upload-slot label.pick{
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+    color:var(--steel-400); font-size:12px; font-weight:600; margin-top:6px;
+  }
+  .upload-slot label.pick:hover{color:#fff;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ink-400); flex:none;}
+  .upload-slot.filled .dot{background:var(--teal-500);}
 
-/* ---------- Layout ---------- */
-.wrap{max-width:1360px;margin:0 auto;padding:22px 28px 60px;}
-.toast{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--brand-dark);color:#fff;padding:12px 20px;border-radius:10px;
-  font-size:13px;font-weight:500;box-shadow:var(--shadow-pop);
-  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
-  z-index:100;display:flex;align-items:center;gap:8px;
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.toast svg{width:16px;height:16px;color:#7FE0A8;flex:none;}
+  /* ---------- Empty state ---------- */
+  #empty-state{
+    max-width:640px; margin:64px auto; text-align:center; padding:0 20px;
+  }
+  #empty-state .icon{font-size:38px; margin-bottom:14px;}
+  #empty-state h2{font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 8px;}
+  #empty-state p{color:var(--ink-600); font-size:14px; line-height:1.6; margin:0;}
 
-/* ---------- Filter bar ---------- */
-.filterbar{
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:14px 16px;
-  display:flex;
-  gap:14px;
-  flex-wrap:wrap;
-  align-items:flex-end;
-  margin-bottom:16px;
-  box-shadow:var(--shadow-card);
-}
-.field{display:flex;flex-direction:column;gap:5px;min-width:150px;}
-.field label{font-size:11px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
-.field input, .field select{
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:8px 10px;
-  font-size:13px;
-  color:var(--ink);
-  background:var(--surface-soft);
-  min-width:0;
-}
-.field input:focus, .field select:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand);}
-.field.grow{flex:1;min-width:220px;}
-.icon-btn{
-  border:1px solid var(--line);
-  background:var(--surface-soft);
-  border-radius:8px;
-  width:36px;height:36px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;color:var(--ink-soft);flex:none;
-}
-.icon-btn:hover{color:var(--brand);border-color:var(--brand);}
-.icon-btn svg{width:16px;height:16px;}
+  /* ---------- Layout ---------- */
+  main{padding:22px 28px 60px; max-width:1560px; margin:0 auto;}
 
-/* ---------- KPI strip ---------- */
-.kpi-grid{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:12px;
-  margin-bottom:20px;
-}
-@media (max-width:1180px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
-@media (max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
-.kpi-card{
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  padding:15px 16px;
-  box-shadow:var(--shadow-card);
-  opacity:0;
-  animation:fadeUp .5s ease forwards;
-}
-.kpi-card .kpi-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
-.kpi-label{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
-.kpi-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none;}
-.kpi-ico svg{width:15px;height:15px;}
-.kpi-value{font-family:'Space Grotesk';font-size:26px;font-weight:700;line-height:1;letter-spacing:-.01em;}
-.kpi-sub{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .kpi-strip{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:12px;
+  }
+  .kpi-strip.secondary{grid-template-columns:repeat(4,1fr); margin-bottom:20px;}
+  .kpi{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:14px 16px; box-shadow:var(--shadow);
+  }
+  .kpi .lbl{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-400); font-weight:600;}
+  .kpi .val{font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:600; margin-top:6px; letter-spacing:-.01em;}
+  .kpi .sub{font-size:11px; color:var(--ink-400); margin-top:3px;}
+  .kpi.accent-amber .val{color:var(--amber-500);}
+  .kpi.accent-teal .val{color:var(--teal-500);}
+  .kpi.accent-navy .val{color:var(--navy-800);}
 
-/* ---------- Tabs ---------- */
-.tabbar{
-  display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);
-  border-radius:12px;padding:5px;margin-bottom:18px;overflow-x:auto;
-  box-shadow:var(--shadow-card);
-}
-.tabbtn{
-  border:none;background:transparent;padding:9px 15px;border-radius:8px;
-  font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;
-  display:flex;align-items:center;gap:8px;white-space:nowrap;
-  transition:background .15s ease, color .15s ease;
-}
-.tabbtn .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--ink-faint);}
-.tabbtn .count{
-  font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);
-  padding:1px 7px;border-radius:999px;
-}
-.tabbtn:hover{background:var(--surface-soft);color:var(--ink);}
-.tabbtn.active{background:var(--brand-dark);color:#fff;}
-.tabbtn.active .count{background:rgba(255,255,255,.16);color:#fff;}
+  .main-grid{display:grid; grid-template-columns: 1.55fr 1fr; gap:16px; align-items:start;}
+  @media (max-width:1080px){ .main-grid{grid-template-columns:1fr;} .kpi-strip, .kpi-strip.secondary{grid-template-columns:repeat(2,1fr);} }
+  .table-wrap{overflow-x:auto;}
 
-/* ---------- Panels ---------- */
-.panel{display:none;}
-.panel.active{display:block;animation:fadeIn .35s ease;}
-@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
-.grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}
-@media (max-width:980px){.grid-2{grid-template-columns:1fr;}}
-.card{
-  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-  padding:18px;box-shadow:var(--shadow-card);
-}
-.card + .card{margin-top:16px;}
-.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;flex-wrap:wrap;}
-.card-head h3{margin:0;font-size:14.5px;font-weight:600;}
-.card-sub{font-size:12px;color:var(--ink-soft);margin:2px 0 14px;}
-.tag{
-  font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-  padding:3px 9px;border-radius:999px;
-}
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); overflow:hidden;
+  }
+  .panel-head{
+    padding:14px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .panel-head h3{font-family:'Space Grotesk',sans-serif; font-size:14.5px; margin:0; font-weight:600;}
+  .panel-head .hint{font-size:11.5px; color:var(--ink-400);}
 
-/* deposit accent utility */
-.acc-cd13{color:var(--cd13);} .bg-cd13{background:var(--cd13);} .soft-cd13{background:var(--cd13-soft);color:#0B5A62;}
-.acc-quarentena{color:var(--quarentena);} .bg-quarentena{background:var(--quarentena);} .soft-quarentena{background:var(--quarentena-soft);color:#8A5B14;}
-.acc-reembalar{color:var(--reembalar);} .bg-reembalar{background:var(--reembalar);} .soft-reembalar{background:var(--reembalar-soft);color:#553681;}
-.acc-descarte{color:var(--descarte);} .bg-descarte{background:var(--descarte);} .soft-descarte{background:var(--descarte-soft);color:#8A2A21;}
-.acc-ok{color:var(--ok);} .soft-ok{background:var(--ok-soft);color:#166B44;}
+  .controls{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+  .controls input[type=text]{
+    border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-size:12.5px; font-family:inherit;
+    width:170px;
+  }
+  .controls label.chk{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-600);}
+  .export-btn{
+    background:var(--navy-800); color:#fff; border:none; border-radius:7px; padding:7px 14px;
+    font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:6px;
+  }
+  .export-btn:hover{background:var(--navy-900);}
 
-.dep-hero{
-  border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;color:#fff;
-  display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;
-  position:relative;overflow:hidden;
-}
-.dep-hero:before{content:"";position:absolute;inset:0;opacity:.14;background-image:radial-gradient(circle at 88% -10%, #fff 0%, transparent 60%);}
-.dep-hero h2{margin:0 0 4px;font-size:20px;color:#fff;}
-.dep-hero p{margin:0;font-size:12.5px;color:rgba(255,255,255,.82);max-width:480px;}
-.dep-hero-stats{display:flex;gap:26px;flex-wrap:wrap;}
-.dep-hero-stat b{display:block;font-family:'Space Grotesk';font-size:22px;line-height:1;}
-.dep-hero-stat span{font-size:11px;color:rgba(255,255,255,.78);text-transform:uppercase;letter-spacing:.04em;}
+  .sku-summary-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .sku-summary-head h4{font-family:'Space Grotesk',sans-serif; font-size:17px; margin:0 0 3px;}
+  .sku-summary-head .code{font-family:'JetBrains Mono',monospace; color:var(--ink-400); font-size:12px;}
+  .sku-kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px;}
+  .sku-kpis .mk{background:var(--bg); border-radius:8px; padding:10px 12px;}
+  .sku-kpis .mk .l{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-400); font-weight:600;}
+  .sku-kpis .mk .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; margin-top:4px;}
+  .sku-table{width:100%; border-collapse:collapse; margin-top:14px; font-size:12.5px;}
+  .sku-table th{text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--ink-400); padding:7px 8px; border-bottom:2px solid var(--line);}
+  .sku-table td{padding:7px 8px; border-bottom:1px solid var(--line);}
+  .sku-table td.num{font-family:'JetBrains Mono',monospace; text-align:right;}
+  .sku-table tr.corte td{background:var(--amber-100); color:#8A5416;}
+  .sku-multi{display:flex; flex-direction:column; gap:6px;}
+  .sku-multi-item{display:flex; justify-content:space-between; padding:9px 12px; background:var(--bg); border-radius:7px; cursor:pointer; font-size:12.5px;}
+  .sku-multi-item:hover{background:#E4E9EF;}
+  .sku-multi-item .code{font-family:'JetBrains Mono',monospace; font-weight:600;}
 
-.mini-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-@media (max-width:640px){.mini-kpis{grid-template-columns:1fr 1fr;}}
-.mini-kpi{background:var(--surface-soft);border:1px solid var(--line-soft);border-radius:10px;padding:11px 13px;}
-.mini-kpi .l{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
-.mini-kpi .v{font-family:'Space Grotesk';font-size:19px;font-weight:700;margin-top:3px;}
+  /* ---------- Custo de Frete (Frota Própria) ---------- */
+  .ff-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0;}
+  .ff-label{font-size:12.5px; color:var(--ink-600); font-weight:600;}
+  .ff-input-main{
+    width:120px; border:1px solid var(--line); border-radius:6px; padding:5px 8px;
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; text-align:right;
+  }
+  select.ff-input-main{text-align:left; padding:5px 6px;}
+  .ff-group-title{
+    font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-400); font-weight:700;
+    margin:12px 0 2px; padding-top:8px; border-top:1px solid var(--line);
+  }
+  .ff-line{display:flex; justify-content:space-between; padding:5px 0; font-size:12.5px; color:var(--ink-600);}
+  .ff-line .mono{font-weight:600; color:var(--ink-900);}
+  .ff-total-row{
+    display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding:12px 14px;
+    background:var(--navy-900); border-radius:8px; color:#fff; font-weight:700; font-size:15px;
+  }
+  .ff-total-row .mono{font-family:'JetBrains Mono',monospace; color:#FFF2CC;}
 
-/* ---------- Table ---------- */
-.table-scroll{overflow:auto;border:1px solid var(--line-soft);border-radius:10px;max-height:520px;}
-table{width:100%;border-collapse:collapse;font-size:12.5px;}
-thead th{
-  position:sticky;top:0;background:var(--surface-soft);
-  text-align:left;padding:9px 12px;font-size:10.5px;font-weight:700;color:var(--ink-soft);
-  text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);white-space:nowrap;z-index:2;
-}
-tbody td{padding:8px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink);vertical-align:top;}
-tbody tr:hover{background:var(--surface-soft);}
-tbody tr.dim{opacity:.32;}
-.addr-chip{
-  font-family:'IBM Plex Mono';font-size:11.5px;font-weight:600;background:var(--surface-soft);
-  border:1px solid var(--line);padding:2px 7px;border-radius:6px;display:inline-block;
-}
-.desc-cell b{display:block;font-weight:600;}
-.desc-cell .meta{font-size:11px;color:var(--ink-soft);}
-.num{font-family:'IBM Plex Mono';font-variant-numeric:tabular-nums;text-align:right;}
-.empty-row td{text-align:center;color:var(--ink-faint);padding:34px;font-size:13px;}
+  /* ---------- Table ---------- */
+  .table-wrap{max-height:640px; overflow:auto;}
+  table.grid{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.grid thead th{
+    position:sticky; top:0; z-index:2;
+    background:var(--navy-800); color:#fff; text-align:left; font-weight:600;
+    padding:9px 9px; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace; white-space:nowrap;
+  }
+  table.grid td{padding:7px 9px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  table.grid td:nth-child(4){max-width:230px; overflow:hidden; text-overflow:ellipsis;}
+  table.grid td:nth-child(2){max-width:150px; overflow:hidden; text-overflow:ellipsis;}
+  table.grid td.num{font-family:'JetBrains Mono',monospace; text-align:right;}
+  table.grid tr.item:hover{background:#F7F9FB;}
+  table.grid tr.corte td{background:var(--amber-100); color:#8A5416;}
+  table.grid tr.corte:hover td{background:#F9DFBB;}
+  table.grid tr.parcial td{background:#FFF3D6; color:#8A6D16;}
+  table.grid tr.parcial:hover td{background:#FCE9B8;}
+  table.grid tr.subtotal td{background:#EDEFF3; font-weight:700; border-top:1px solid var(--line); border-bottom:2px solid var(--line);}
+  table.grid tr.grandtotal td{background:var(--navy-900); color:#fff; font-weight:700; position:sticky; bottom:0;}
+  .corte-sub{display:block; font-weight:600; font-size:10.5px; color:var(--amber-500); margin-top:1px;}
+  table.grid tr.subtotal .corte-sub{color:#B7541A;}
+  .badge{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600;}
+  .badge.ok{background:var(--teal-100); color:#106B4F;}
+  .badge.corte{background:#F9DFBB; color:#8A5416;}
+  .badge.parcial{background:#FCE9B8; color:#8A6D16;}
+  .badge .dot{width:5px;height:5px;}
+  .badge.ok .dot{background:#106B4F;}
+  .badge.corte .dot{background:#8A5416;}
+  .badge.parcial .dot{background:#8A6D16;}
 
-/* ---------- Charts (custom SVG) ---------- */
-.chart-wrap svg{width:100%;height:auto;display:block;overflow:visible;}
-.hbar-chart{display:flex;flex-direction:column;gap:10px;}
-.hbar-row{display:grid;align-items:center;gap:10px;}
-.hbar-label{font-size:11px;color:var(--ink-soft);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.hbar-track{height:22px;border-radius:5px;position:relative;min-width:20px;}
-.hbar-fill{height:100%;border-radius:5px;opacity:0.92;min-width:3px;}
-.hbar-value{font-size:11px;font-weight:600;color:var(--ink);font-family:'IBM Plex Mono';white-space:nowrap;}
-.bar-label{font-size:11px;fill:var(--ink-soft);font-family:'Inter';}
-.bar-value{font-size:11px;fill:var(--ink);font-weight:600;font-family:'IBM Plex Mono';}
-.axis-label{font-size:10px;fill:var(--ink-faint);font-family:'Inter';}
-.gridline{stroke:var(--line-soft);stroke-width:1;}
+  /* ---------- Side panel ---------- */
+  .side-stack{display:flex; flex-direction:column; gap:16px;}
 
-/* ---------- Rack map (signature element) ---------- */
-.rackmap-legend{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--ink-soft);margin-bottom:12px;flex-wrap:wrap;}
-.legend-scale{display:flex;height:10px;width:120px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
-.legend-scale span{flex:1;}
-.rackmap{display:flex;flex-direction:column;gap:7px;padding:6px 2px 2px;}
-.rack-row{display:flex;align-items:center;gap:8px;}
-.rack-row-label{
-  width:30px;flex:none;font-family:'IBM Plex Mono';font-size:11px;font-weight:700;color:var(--ink-soft);text-align:center;
-}
-.rack-cells{display:grid;grid-template-columns:repeat(36,minmax(0,1fr));gap:3px;flex:1;}
-.cell{
-  aspect-ratio:1/1;border-radius:3px;cursor:default;position:relative;
-  border:1px solid transparent;
-  transition:transform .1s ease, box-shadow .1s ease;
-}
-.cell.active{cursor:pointer;}
-.cell.active:hover{transform:scale(1.28);box-shadow:0 4px 10px rgba(16,24,43,.28);z-index:5;border-color:rgba(0,0,0,.15);}
-.cell.empty{background:repeating-linear-gradient(45deg, var(--line-soft), var(--line-soft) 3px, var(--surface) 3px, var(--surface) 6px);}
-.cell.livre{background:var(--surface);border:1.5px dashed var(--cd13);opacity:.75;}
-.cell.livre:hover{opacity:1;}
-.cell-flag{
-  position:absolute;top:-4px;right:-4px;width:13px;height:13px;border-radius:50%;
-  background:var(--descarte);color:#fff;font-size:9px;font-weight:800;line-height:13px;
-  text-align:center;box-shadow:0 0 0 1.5px var(--surface);z-index:3;pointer-events:none;
-}
-.cell.selected{outline:2px solid var(--brand-dark);outline-offset:1px;}
-.cell-tip{
-  position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
-  background:var(--brand-dark);color:#fff;padding:7px 10px;border-radius:8px;font-size:11px;
-  white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:20;
-  box-shadow:var(--shadow-pop);line-height:1.5;
-}
-.cell-tip b{font-family:'IBM Plex Mono';}
-.cell.active:hover .cell-tip{opacity:1;}
-.cell-tip:after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--brand-dark);}
+  .transport-card{padding:18px;}
+  .transport-name{
+    font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700; color:var(--navy-900);
+    margin:10px 0 2px;
+  }
+  .transport-cost{font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--ink-600);}
+  .verba-row{display:flex; justify-content:space-between; align-items:baseline; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);}
+  .verba-row .l{font-size:12px; color:var(--ink-600);}
+  .verba-row .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px;}
 
-/* ---------- Cargas ---------- */
-.carga-card{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow-card);}
-.carga-card + .carga-card{margin-top:14px;}
-.carga-top{padding:16px 18px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;cursor:pointer;}
-.carga-top:hover{background:var(--surface-soft);}
-.carga-id{display:flex;align-items:center;gap:12px;}
-.carga-id .num{width:38px;height:38px;border-radius:10px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:14px;flex:none;}
-.carga-id h4{margin:0;font-size:14px;}
-.carga-id .meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
-.carga-stats{display:flex;gap:22px;flex-wrap:wrap;}
-.carga-stats div{text-align:right;}
-.carga-stats b{font-family:'Space Grotesk';font-size:16px;display:block;}
-.carga-stats span{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
-.carga-body{border-top:1px solid var(--line-soft);padding:16px 18px;display:none;}
-.carga-body.open{display:block;}
-.chev{transition:transform .2s ease;color:var(--ink-faint);flex:none;}
-.chev.open{transform:rotate(180deg);}
-.occ-ok{color:var(--ok);font-weight:600;}
-.occ-bad{color:var(--descarte);font-weight:600;}
-.occ-tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;display:inline-block;margin:1px 3px 1px 0;}
+  .rate-editor{padding:16px 18px;}
+  .rate-editor .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid var(--line);}
+  .rate-editor .row:last-child{border-bottom:none;}
+  .rate-editor .name{font-size:12.5px; color:var(--ink-600); font-weight:600;}
+  .rate-editor .inputs{display:flex; gap:6px;}
+  .rate-editor .col-heads{display:flex; justify-content:flex-end; gap:6px; padding-bottom:6px;}
+  .rate-editor .col-heads span{width:80px; text-align:center; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-400); font-weight:600;}
+  .rate-editor input[type=number]{
+    width:80px; border:1px solid var(--line); border-radius:6px; padding:5px 8px; font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; text-align:right;
+  }
+  .rate-editor .pct-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0 2px;}
 
-.section-title{display:flex;align-items:center;gap:10px;margin:26px 0 14px;}
-.section-title h2{font-size:16px;margin:0;}
-.section-title .line{flex:1;height:1px;background:var(--line);}
+  /* Loading gauge (signature element) */
+  .gauge-card{padding:18px;}
+  .gauge-track{
+    height:34px; border-radius:8px; background:#EEF1F5; overflow:hidden; display:flex;
+    border:1px solid var(--line); position:relative;
+  }
+  .gauge-fill{background:linear-gradient(90deg,var(--teal-500),#27B98B); height:100%; display:flex; align-items:center; justify-content:flex-end; padding-right:8px;}
+  .gauge-fill span{color:#fff; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700;}
+  .gauge-cut{background:repeating-linear-gradient(135deg, var(--amber-500) 0 6px, #D9761A 6px 12px); height:100%;}
+  .gauge-legend{display:flex; justify-content:space-between; margin-top:9px; font-size:11.5px; color:var(--ink-600);}
+  .gauge-legend b{color:var(--ink-900); font-family:'JetBrains Mono',monospace;}
 
-footer{text-align:center;color:var(--ink-faint);font-size:11.5px;padding:30px 0 10px;}
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+  .pedidos-list{padding:6px 0; max-height:220px; overflow:auto;}
+  .pedido-row{display:flex; justify-content:space-between; align-items:center; padding:8px 18px; border-bottom:1px solid var(--line); font-size:12px;}
+  .pedido-row:last-child{border-bottom:none;}
+  .pedido-row .doc{font-family:'JetBrains Mono',monospace; color:var(--ink-600);}
+  .pedido-row .cli{font-weight:600; margin-left:8px;}
+  .pedido-row .pct{font-family:'JetBrains Mono',monospace; font-weight:700;}
+  .pedido-row .pct.high{color:var(--amber-500);}
+  .pedido-row .pct.zero{color:var(--teal-500);}
+
+  footer{text-align:center; color:var(--ink-400); font-size:11px; padding:20px; font-family:'JetBrains Mono',monospace;}
+
+  table.grid tr.item{cursor:pointer;}
+  table.grid tr.subtotal{cursor:pointer;}
+  .open-hint{font-size:10.5px; font-weight:500; color:var(--steel-500); margin-left:8px;}
+  table.grid tr.subtotal:hover td{background:#E3E9F0;}
+  table.grid tr.corte.item:hover td{background:#F4D2A0;}
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(14,22,33,.55); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center; z-index:50; padding:24px;
+  }
+  .modal-backdrop[hidden]{display:none;}
+  .modal-card{
+    background:#fff; border-radius:14px; max-width:820px; width:100%; max-height:86vh; overflow:auto;
+    box-shadow:0 24px 64px -12px rgba(14,22,33,.35);
+  }
+  .modal-head{
+    background:linear-gradient(180deg,var(--navy-900),var(--navy-950)); color:#fff;
+    padding:20px 24px; position:sticky; top:0; z-index:2;
+  }
+  .modal-head .doc{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--steel-400); letter-spacing:.08em; text-transform:uppercase;}
+  .modal-head h2{font-family:'Space Grotesk',sans-serif; font-size:21px; margin:4px 0 0;}
+  .modal-close{
+    position:absolute; top:16px; right:18px; background:rgba(255,255,255,.1); border:none; color:#fff;
+    width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:16px; line-height:1;
+  }
+  .modal-close:hover{background:rgba(255,255,255,.2);}
+  .modal-kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:18px 24px; border-bottom:1px solid var(--line);}
+  .modal-kpis .mk{background:var(--bg); border-radius:8px; padding:10px 12px;}
+  .modal-kpis .mk .l{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-400); font-weight:600;}
+  .modal-kpis .mk .v{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:14.5px; margin-top:4px;}
+  .modal-body{padding:6px 24px 24px;}
+  .modal-body table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:10px;}
+  .modal-body th{text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--ink-400); padding:8px 8px; border-bottom:2px solid var(--line);}
+  .modal-body td{padding:8px; border-bottom:1px solid var(--line);}
+  .modal-body td.num{font-family:'JetBrains Mono',monospace; text-align:right;}
+  .modal-body tr.corte td{background:var(--amber-100); color:#8A5416;}
+
+  #dashboard[hidden]{display:none;}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="brandmark">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M3 8L12 3L21 8V16L12 21L3 16V8Z" stroke="#8FB3FF" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M3 8L12 13L21 8M12 13V21" stroke="#8FB3FF" stroke-width="1.6" stroke-linejoin="round"/>
-    </svg>
+<header>
+  <div class="header-row">
+    <div>
+      <p class="eyebrow">CD13 · Análise de Corte &amp; Roteirização</p>
+      <h1>Painel de Roteirização</h1>
+      <p class="subtitle">Importe a planilha de pedido e a de estoque (exportações brutas). O painel cruza os códigos, aplica o corte por falta de estoque e calcula a verba de frete disponível.</p>
+    </div>
+    <div class="upload-cluster">
+      <div class="upload-slot" id="slot-pedido">
+        <div style="display:flex;align-items:center;gap:6px;"><span class="dot"></span><span class="lbl">01 · Pedido</span></div>
+        <div class="fname" id="fname-pedido">Nenhum arquivo</div>
+        <label class="pick" for="file-pedido">Escolher .xlsx →</label>
+        <input type="file" id="file-pedido" accept=".xlsx,.xls">
+      </div>
+      <div class="upload-slot" id="slot-estoque">
+        <div style="display:flex;align-items:center;gap:6px;"><span class="dot"></span><span class="lbl">02 · Estoque</span></div>
+        <div class="fname" id="fname-estoque">Nenhum arquivo</div>
+        <label class="pick" for="file-estoque">Escolher .xlsx →</label>
+        <input type="file" id="file-estoque" accept=".xlsx,.xls">
+      </div>
+    </div>
   </div>
-  <div class="brand-copy">
-    <h1>StockFlow BH · Painel Logístico</h1>
-    <p>Armazenagem, expedição e conferência de cargas — CD13, Quarentena, Reembalar e Avariar</p>
-  </div>
-  <div class="topbar-actions">
-    <span class="pill" id="build-version-indicator" title="Se estiver em dúvida se abriu o arquivo certo, confira esse número.">🏷️ v2 · 2026-09-11</span>
-    <span class="pill" id="pill-cargas">3 cargas registradas</span>
-    <span class="pill" id="pill-posicoes">127 posições de estoque</span>
-    <button class="btn btn-primary" id="btn-import">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 15V4M12 15l-4-4M12 15l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Importar Excel
-    </button>
-    <input type="file" id="file-input" accept=".xlsx,.xls">
-    <button class="btn btn-ghost" id="btn-export">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Exportar Excel
-    </button>
-    <button class="btn btn-ghost" id="btn-reset" title="Restaurar dados originais da planilha">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Dados originais
-    </button>
-  </div>
+</header>
+
+<div id="empty-state">
+  <div class="icon">📦</div>
+  <h2>Aguardando as duas planilhas</h2>
+  <p>Suba o arquivo de <b>Pedido</b> (com Doc.venda, Material, Quantidade da ordem, Peso bruto, Val.líq. etc.) e o de <b>Estoque</b> (com Produto e Qtd.disponível). Assim que os dois forem carregados, o painel calcula tudo automaticamente — nada fica salvo, o processamento é só no seu navegador.</p>
 </div>
 
-<div class="wrap">
+<main id="dashboard" hidden>
 
-  <div class="filterbar">
-    <div class="field">
-      <label for="f-from">Período — de</label>
-      <input type="date" id="f-from">
+  <div class="kpi-strip" id="kpi-strip"></div>
+  <div class="kpi-strip secondary" id="kpi-strip-2"></div>
+
+  <div class="panel" id="sku-panel" style="margin-bottom:16px;">
+    <div class="panel-head">
+      <div>
+        <h3>Consulta por SKU</h3>
+        <div class="hint">busca o material em todos os pedidos importados e mostra um resumo</div>
+      </div>
+      <div class="controls">
+        <input type="text" id="sku-search" placeholder="Digite o código do material…" style="width:220px;">
+      </div>
     </div>
-    <div class="field">
-      <label for="f-to">Período — até</label>
-      <input type="date" id="f-to">
-    </div>
-    <div class="field grow">
-      <label for="f-search">Buscar SKU, descrição ou endereço</label>
-      <input type="text" id="f-search" placeholder="Ex.: 3000001193, amaciante, A12...">
-    </div>
-    <div class="field">
-      <label for="f-categoria">Categoria</label>
-      <select id="f-categoria"><option value="">Todas as categorias</option></select>
-    </div>
-    <button class="icon-btn" id="btn-clear" title="Limpar filtros">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
+    <div id="sku-result" style="padding:16px 18px; display:none;"></div>
   </div>
 
-  <div class="kpi-grid" id="kpi-grid"></div>
+  <div class="main-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h3>Pedidos — detalhado</h3>
+          <div class="hint" id="table-hint">itens agrupados por pedido, com corte de estoque aplicado</div>
+        </div>
+        <div class="controls">
+          <input type="text" id="search" placeholder="Buscar cliente ou material…">
+          <label class="chk"><input type="checkbox" id="only-cut"> só pedidos com corte</label>
+          <button class="export-btn" id="export-btn">⭳ Exportar Excel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="grid" id="grid">
+          <thead>
+            <tr>
+              <th>Doc.venda</th><th>Cliente</th><th>Material</th><th>Denominação</th>
+              <th style="text-align:right;">Qtd</th>
+              <th style="text-align:right;">Valor Total</th>
+              <th style="text-align:right;">Peso</th>
+              <th style="text-align:right;">Estoque</th>
+              <th style="text-align:right;">Falta</th>
+            </tr>
+          </thead>
+          <tbody id="grid-body"></tbody>
+        </table>
+      </div>
+    </div>
 
-  <div class="tabbar" id="tabbar"></div>
+    <div class="side-stack">
 
-  <div id="panels"></div>
+      <div class="panel gauge-card">
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-size:14.5px; margin:0 0 12px;">Carga liberada vs. cortada</h3>
+        <div class="gauge-track">
+          <div class="gauge-fill" id="gauge-fill" style="width:0%"><span id="gauge-fill-label"></span></div>
+          <div class="gauge-cut" id="gauge-cut" style="width:0%"></div>
+        </div>
+        <div class="gauge-legend">
+          <span>🟢 Atende — <b id="leg-ok">R$ 0</b></span>
+          <span>🟧 Corte — <b id="leg-cut">R$ 0</b></span>
+        </div>
+      </div>
 
-  <footer>StockFlow BH · Painel gerado a partir de <span class="mono">Estoque_BH.xlsx</span> — importe uma nova planilha a qualquer momento para atualizar os dados.</footer>
+      <div class="panel transport-card">
+        <div class="hint" style="font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-400); font-weight:600;">Transporte sugerido</div>
+        <div class="transport-name" id="transp-name">—</div>
+        <div class="transport-cost" id="transp-cost">selecione as planilhas</div>
+        <div class="verba-row">
+          <span class="l">Valor liberado frete (10%)</span>
+          <span class="v mono" id="verba-val">R$ 0,00</span>
+        </div>
+        <div class="verba-row" style="border-top:none; padding-top:6px; margin-top:0;">
+          <span class="l">Total com corte + imposto</span>
+          <span class="v mono" id="total-corte-imposto" style="font-size:13px; color:var(--ink-600);">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="panel rate-editor">
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-size:13.5px; margin:0 0 4px;">Tabela de frete (região metropolitana)</h3>
+        <div class="hint" style="margin-bottom:6px;">valores editáveis — custo e capacidade decidem o veículo sugerido</div>
+        <div class="col-heads"><span>Custo R$</span><span>Capac. kg</span></div>
+        <div class="row"><span class="name">VUC</span><div class="inputs"><input type="number" id="rate-vuc" value="650"><input type="number" id="cap-vuc" value="3500"></div></div>
+        <div class="row"><span class="name">3/4</span><div class="inputs"><input type="number" id="rate-34" value="750"><input type="number" id="cap-34" value="4000"></div></div>
+        <div class="row"><span class="name">TOCO</span><div class="inputs"><input type="number" id="rate-toco" value="950"><input type="number" id="cap-toco" value="8000"></div></div>
+        <div class="row"><span class="name">TRUCK/BITRUCK</span><div class="inputs"><input type="number" id="rate-truck" value="1200"><input type="number" id="cap-truck" value="14000"></div></div>
+        <div class="pct-row">
+          <span class="name">% liberado pro frete</span>
+          <input type="number" id="rate-pct" value="10" style="width:64px;">
+        </div>
+      </div>
+
+      <div class="panel rate-editor" id="pallet-editor">
+        <h3 style="font-family:'Space Grotesk',sans-serif; font-size:13.5px; margin:0 0 4px;">Paletização</h3>
+        <div class="hint" style="margin-bottom:6px;">medidas em mm — trabalha só com caixas, não com unidade</div>
+        <div class="row"><span class="name">Palete (compr. × larg.)</span>
+          <div class="inputs"><input type="number" id="pallet-l" value="1000" style="width:70px;"><input type="number" id="pallet-w" value="1200" style="width:70px;"></div>
+        </div>
+        <div class="row"><span class="name">Caixa (c × l × a)</span>
+          <div class="inputs" style="gap:4px;">
+            <input type="number" id="box-l" value="300" style="width:52px;">
+            <input type="number" id="box-w" value="300" style="width:52px;">
+            <input type="number" id="box-h" value="250" style="width:52px;">
+          </div>
+        </div>
+        <div class="row"><span class="name">Camadas máx. (lastros)</span><input type="number" id="pallet-layers" value="6" style="width:80px;"></div>
+        <div class="row"><span class="name">Peso máx. por caixa (kg)</span><input type="number" id="box-maxkg" value="20" style="width:80px;"></div>
+        <div class="pct-row" style="border-top:1px dashed var(--line); margin-top:6px;">
+          <span class="name">Caixas por palete (calculado)</span>
+          <span class="mono" id="boxes-per-pallet" style="font-weight:700;">—</span>
+        </div>
+      </div>
+
+      <div class="panel" id="frete-frota-card">
+        <div class="panel-head">
+          <h3>Custo de Frete (Frota Própria)</h3>
+        </div>
+        <div style="padding:16px 18px;">
+          <div class="ff-row">
+            <span class="ff-label">Km rodado</span>
+            <input type="number" id="ff-km" value="100" class="ff-input-main">
+          </div>
+          <div class="ff-row">
+            <span class="ff-label">Veículo</span>
+            <select id="ff-veiculo" class="ff-input-main">
+              <option value="Toco">Toco</option>
+              <option value="Truck">Truck</option>
+              <option value="Bitruck">Bitruck</option>
+              <option value="Carreta">Carreta</option>
+              <option value="Bitrem">Bitrem</option>
+            </select>
+          </div>
+          <div class="ff-row">
+            <span class="ff-label">Dias de viagem</span>
+            <input type="number" id="ff-dias" value="1" class="ff-input-main">
+          </div>
+          <div class="ff-row">
+            <span class="ff-label">Preço combustível (R$/L)</span>
+            <input type="number" step="0.01" id="ff-preco-litro" value="7.20" class="ff-input-main">
+          </div>
+
+          <div class="ff-group-title">Custo variável</div>
+          <div class="ff-line" style="color:var(--ink-400); font-size:11.5px;"><span>Litros consumidos</span><span class="mono" id="ff-out-litros">0,0 L</span></div>
+          <div class="ff-line"><span>Combustível</span><span class="mono" id="ff-out-combustivel">R$ 0,00</span></div>
+          <div class="ff-row"><span class="ff-label">Pedágio</span><input type="number" step="0.01" id="ff-pedagio" value="0" class="ff-input-main"></div>
+          <div class="ff-line"><span>Manutenção e Pneu</span><span class="mono" id="ff-out-manutencao">R$ 0,00</span></div>
+          <div class="ff-row"><span class="ff-label">Hosp + Janta</span><input type="number" step="0.01" id="ff-hospjanta" value="0" class="ff-input-main"></div>
+
+          <div class="ff-group-title">Custo fixo</div>
+          <div class="ff-row"><span class="ff-label">Motorista</span><input type="number" step="0.01" id="ff-motorista" value="230" class="ff-input-main"></div>
+          <div class="ff-row"><span class="ff-label">Ajudante</span><input type="number" step="0.01" id="ff-ajudante" value="0" class="ff-input-main"></div>
+          <div class="ff-line"><span>Depreciação</span><span class="mono" id="ff-out-depreciacao">R$ 0,00</span></div>
+          <div class="ff-line"><span>IPVA</span><span class="mono" id="ff-out-ipva">R$ 0,00</span></div>
+
+          <div class="ff-total-row">
+            <span>Custo Total</span>
+            <span class="mono" id="ff-out-total">R$ 0,00</span>
+          </div>
+          <div class="hint" style="text-align:right; margin-top:4px;">R$ <span id="ff-out-porkm">0,00</span> / km</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Corte por pedido</h3></div>
+        <div class="pedidos-list" id="pedidos-list"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer>processamento 100% local no navegador — nenhum dado é enviado a servidores</footer>
+
+<div class="modal-backdrop" id="modal-backdrop" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <button class="modal-close" id="modal-close">✕</button>
+      <div class="doc" id="modal-doc">PEDIDO</div>
+      <h2 id="modal-cliente">—</h2>
+    </div>
+    <div class="modal-kpis" id="modal-kpis"></div>
+    <div class="modal-body">
+      <table>
+        <thead>
+          <tr><th>Material</th><th>Denominação</th><th style="text-align:right;">Qtd</th>
+          <th style="text-align:right;">Estoque</th><th>Situação</th>
+          <th style="text-align:right;">Peso</th><th style="text-align:right;">Valor</th>
+          <th style="text-align:right;">Imposto</th></tr>
+        </thead>
+        <tbody id="modal-items"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
-
-<div class="toast" id="toast">
-  <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <span id="toast-msg"></span>
-</div>
-
-<script type="application/json" id="embedded-data">
-{"estoque":[],"cargas":[],"paletesResumo":{"emUso":0,"vaziosBons":0,"vaziosDanificados":0,"total":0},"sap":[],"enderecosVazios":[]}
-</script>
 
 <script>
-/* ============ StockFlow BH — lógica do painel ============ */
-const RAW = JSON.parse(document.getElementById('embedded-data').textContent);
-const ORIGINAL = JSON.parse(JSON.stringify(RAW));
+let pedidoRows = null;
+let estoqueMap = null;
 
-const DEP_GROUPS = {
-  cd13:       { label:'CD13',                nome:'CD13 · Armazenagem & Picking', deps:['CD13','PICKING'], color:'cd13',
-                desc:'Área principal de armazenagem em racks e a faixa de picking (PJ) usada para separação fracionada.' },
-  quarentena: { label:'Quarentena',           nome:'Quarentena',                   deps:['Quarentena'], color:'quarentena',
-                desc:'Produtos retidos aguardando decisão — inspeção, liberação ou encaminhamento para reembalagem/descarte.' },
-  reembalar:  { label:'Reembalar',            nome:'Reembalar',                    deps:['REEMBALAR'], color:'reembalar',
-                desc:'Itens com embalagem danificada que ainda têm o conteúdo aproveitável e aguardam reprocesso.' },
-  descarte:   { label:'Avariar (Descarte)',   nome:'Avariar / Descarte',           deps:['Descarte','AVARIA'], color:'descarte',
-                desc:'Caixas avariadas sem possibilidade de recuperação, prontas para baixa e descarte definitivo.' },
-};
-const TAB_ORDER = ['geral','cd13','quarentena','reembalar','descarte','cargas','comercial','validade','divergencia','sap'];
-const TAB_LABEL = {geral:'Visão Geral', cd13:'CD13', quarentena:'Quarentena', reembalar:'Reembalar', descarte:'Avariar (Descarte)', cargas:'Cargas', comercial:'Dashboard Comercial', validade:'Validade', divergencia:'Divergência', sap:'Confronto SAP'};
-const TAB_COLOR = {geral:'brand', cd13:'cd13', quarentena:'quarentena', reembalar:'reembalar', descarte:'descarte', cargas:'brand', comercial:'brand', validade:'brand', divergencia:'brand', sap:'brand'};
-
-const CAT_NORM = {
-  'DESINFENTANTE':'DESINFETANTE',
-  'LAVA ROUPAS LIQUIDO':'LAVA ROUPA LIQUIDO',
-};
-function normCat(c){ return CAT_NORM[c] || c || 'SEM CATEGORIA'; }
-
-const state = {
-  data: JSON.parse(JSON.stringify(ORIGINAL)),
-  tab: 'geral',
-  search: '',
-  categoria: '',
-  from: null,
-  to: null,
-  addressFilter: null,
-  openCarga: null,
-  semValidadeSort: { col: 'endereco', dir: 1 },
-  semValidadeDep: '',
-  comercialMetrica: 'valor',
+const HEADER_ALIASES = {
+  doc: ['doc.venda','doc venda','docvenda'],
+  razao: ['razão social','razao social'],
+  cliente: ['cliente'],
+  material: ['material'],
+  denom: ['denominação de item','denominacao de item','denominação','denominacao'],
+  qtd: ['quantidade da ordem','quantidade'],
+  peso: ['peso bruto'],
+  precoUnit: ['preço líq.','preco liq.','preço liquido','preco liquido','preço unit item','preco unit item'],
+  imposto: ['montante do imposto','preço imposto item','preco imposto item'],
+  valTotal: ['val.líq.','val liq.','val.liquido','val líq','val. total item','val total item'],
+  produto: ['produto'],
+  qtdDisp: ['qtd.disponível umb','qtd disponivel umb','qtd.disponivel umb','qtd.disponível'],
+  deposito: ['tp.depósito origem','tp.deposito origem']
 };
 
-/* ---------------- helpers ---------------- */
-const fmtInt = n => (n||0).toLocaleString('pt-BR');
-const fmtPct = n => (isFinite(n)?n:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%';
-const fmtMoney = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmtDate = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
-function daysUntil(iso){
-  if(!iso) return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const target = new Date(iso+'T00:00:00');
-  return Math.round((target-today)/86400000);
+function norm(s){
+  return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 }
-function validadeStatus(iso){
-  const d = daysUntil(iso);
-  if(d==null) return {tag:'Sem data', cls:'', d:null};
-  if(d<0) return {tag:'Vencido', cls:'soft-descarte', d};
-  if(d<=60) return {tag:'Crítico', cls:'soft-descarte', d};
-  if(d<=180) return {tag:'Atenção', cls:'soft-quarentena', d};
-  return {tag:'OK', cls:'soft-ok', d};
-}
-function toast(msg){
-  const t = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(()=>t.classList.remove('show'), 3200);
-}
-function matchesSearch(row){
-  if(!state.search) return true;
-  const q = state.search.toLowerCase();
-  return String(row.sku).includes(q) ||
-         (row.descricao||'').toLowerCase().includes(q) ||
-         (row.endereco||'').toLowerCase().includes(q);
-}
-function matchesCategoria(row){
-  if(!state.categoria) return true;
-  return normCat(row.categoria) === state.categoria;
-}
-function inPeriod(dateStr){
-  if(!dateStr) return true;
-  if(state.from && dateStr < state.from) return false;
-  if(state.to && dateStr > state.to) return false;
-  return true;
-}
-
-/* lê as colunas estruturadas de ocorrência de um item de carga (sem regex — direto das colunas) */
-function classifyItem(item){
-  const entries = [];
-  if(item.avariaDescarte) entries.push({tipo:'descarte', qtd:item.avariaDescarte, raw:`Avaria/Descarte: ${item.avariaDescarte} cx`});
-  if(item.reembalar)      entries.push({tipo:'reembalar', qtd:item.reembalar, raw:`Reembalar: ${item.reembalar} cx`});
-  if(item.naoVeio)        entries.push({tipo:'naoveio', qtd:item.naoVeio, raw:`Não veio/faltando: ${item.naoVeio} cx`});
-  if(item.quarentena)     entries.push({tipo:'quarentena', qtd:item.quarentena, raw:`Quarentena: ${item.quarentena} cx`});
-  if(item.obs)            entries.push({tipo:'obs', qtd:0, raw:item.obs});
-  if(entries.length===0){
-    entries.push({tipo:(item.divergencia||0)===0 ? 'ok' : 'outro', qtd:0, raw:''});
+function findCol(headerRow, key){
+  const aliases = HEADER_ALIASES[key].map(norm);
+  for(let i=0;i<headerRow.length;i++){
+    const h = norm(headerRow[i]);
+    if(aliases.includes(h)) return i;
   }
-  return entries;
+  return -1;
 }
-/* checa se a divergência de quantidade desta linha está explicada.
-   Avaria/Reembalar/Quarentena NÃO contam aqui — são destino de itens que chegaram,
-   não motivo de falta. Só "não veio" representa item que realmente não chegou. */
-function itemReconciles(item){
-  return (item.naoVeio||0) === Math.abs(item.divergencia||0);
+function normalizeCode(v){
+  if(v===null||v===undefined) return '';
+  if(typeof v === 'number') return String(Math.round(v));
+  return String(v).trim().replace(/\.0+$/,'');
 }
-
-function normDep(s){ return String(s==null?'':s).trim().toUpperCase(); }
-function itemsForDep(key){
-  const deps = DEP_GROUPS[key].deps.map(normDep);
-  return state.data.estoque.filter(r => deps.includes(normDep(r.deposito)));
+function toNum(v){
+  if(typeof v === 'number') return v;
+  if(!v) return 0;
+  const n = parseFloat(String(v).replace(/\./g,'').replace(',','.'));
+  return isNaN(n) ? (parseFloat(v)||0) : n;
 }
-function filteredCargas(){
-  return state.data.cargas.filter(c => inPeriod(c.data));
+function toNumUI(v){
+  // para valores vindos de <input>/<select> da própria tela: já usam ponto
+  // como decimal (padrão HTML), então NÃO aplica a troca de vírgula/ponto do toNum.
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : n;
 }
-
-/* ============ CONFRONTO SAP (físico x sistema, por código + lote) ============ */
-function computeSapConfronto(){
-  const wmsLote = new Map(); // key "sku|lote" -> {sku,lote,qtd,descricao}
-  const wmsSku = new Map();  // key sku -> qtd
-  const descBySku = new Map();
-  (state.data.estoque||[]).forEach(raw=>{
-    const r = {...raw, sku: Number(raw.sku)};
-    const lote = r.lote==null||r.lote==='' ? null : r.lote;
-    const key = r.sku+'|'+lote;
-    if(!wmsLote.has(key)) wmsLote.set(key, {sku:r.sku, lote, qtd:0});
-    wmsLote.get(key).qtd += r.qtdCx||0;
-    wmsSku.set(r.sku, (wmsSku.get(r.sku)||0) + (r.qtdCx||0));
-    if(!descBySku.has(r.sku)) descBySku.set(r.sku, r.descricao);
-  });
-
-  const sapLote = new Map();
-  const sapSku = new Map();
-  (state.data.sap||[]).forEach(raw=>{
-    const r = {...raw, sku: Number(raw.sku)};
-    const lote = r.lote==null ? null : r.lote;
-    const key = r.sku+'|'+lote;
-    if(!sapLote.has(key)) sapLote.set(key, {sku:r.sku, lote, qtd:0});
-    sapLote.get(key).qtd += r.qtd||0;
-    sapSku.set(r.sku, (sapSku.get(r.sku)||0) + (r.qtd||0));
-    if(!descBySku.has(r.sku)) descBySku.set(r.sku, r.descricao);
-  });
-
-  const loteKeys = new Set([...wmsLote.keys(), ...sapLote.keys()]);
-  const porLote = [...loteKeys].map(key=>{
-    const [skuStr, loteStr] = key.split('|');
-    const sku = Number(skuStr);
-    const lote = loteStr==='null' ? null : loteStr;
-    const wQ = wmsLote.has(key) ? wmsLote.get(key).qtd : 0;
-    const sQ = sapLote.has(key) ? sapLote.get(key).qtd : 0;
-    let status;
-    if(wQ>0 && sQ>0) status = wQ===sQ ? 'ok' : 'diverge';
-    else if(wQ>0 && sQ===0) status = 'sem_sap';
-    else status = 'sem_wms';
-    const skuTotalOk = (wmsSku.get(sku)||0) === (sapSku.get(sku)||0);
-    return {sku, lote, descricao: descBySku.get(sku)||'', wms:wQ, sap:sQ, diff:wQ-sQ, status, soLote: status!=='ok' && skuTotalOk};
-  }).sort((a,b)=> Math.abs(b.diff)-Math.abs(a.diff));
-
-  const skuKeys = new Set([...wmsSku.keys(), ...sapSku.keys()]);
-  const porSku = [...skuKeys].map(sku=>{
-    const wQ = wmsSku.get(sku)||0, sQ = sapSku.get(sku)||0;
-    return {sku, descricao: descBySku.get(sku)||'', wms:wQ, sap:sQ, diff:wQ-sQ, ok: wQ===sQ};
-  }).sort((a,b)=> Math.abs(b.diff)-Math.abs(a.diff));
-
-  return {porLote, porSku};
+function fmtBRL(n){
+  return 'R$ ' + (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtKg(n){
+  return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:3}) + ' kg';
+}
+function situacaoBadge(it){
+  if(it.atende) return '<span class="badge ok"><span class="dot"></span>Atende</span>';
+  if(it.parcial) return '<span class="badge parcial"><span class="dot"></span>Parcial</span>';
+  return '<span class="badge corte"><span class="dot"></span>Corte</span>';
+}
+function situacaoTexto(it){
+  return it.atende ? 'Atende' : (it.parcial ? 'Parcial' : 'Corte');
+}
+function rowClass(it){
+  return it.atende ? '' : (it.parcial ? 'parcial' : 'corte');
 }
 
-
-/* ============ DASHBOARD COMERCIAL (baseado na aba Saída) ============ */
-function filteredSaidas(){
-  return (state.data.saidas||[]).filter(s => inPeriod(s.data));
-}
-function allSaidaItems(){
-  const items = [];
-  filteredSaidas().forEach(s=>{
-    (s.items||[]).forEach(it=>{ items.push({...it, ordemFrete:s.ordemFrete, data:s.data}); });
-  });
-  return items;
-}
-/* Classe A/B/C por participação acumulada (80%/95%) — o item de maior
-   participação é sempre Classe A, mesmo que sozinho passe de 95% acumulado
-   (acontece com poucos SKUs/clientes; sem isso ele cairia errado em C). */
-function computeABC(rows, key){
-  const total = rows.reduce((s,r)=>s+(r[key]||0),0);
-  const sorted = rows.slice().sort((a,b)=>(b[key]||0)-(a[key]||0));
-  let acumulado = 0;
-  return sorted.map((r,i)=>{
-    acumulado += (r[key]||0);
-    const pct = total ? (r[key]||0)/total*100 : 0;
-    const pctAcum = total ? acumulado/total*100 : 0;
-    const classe = i===0 ? 'A' : (pctAcum<=80 ? 'A' : (pctAcum<=95 ? 'B' : 'C'));
-    return {...r, pct, pctAcum, classe};
-  });
-}
-function aggregateSaidaPorSku(){
-  const map = {};
-  allSaidaItems().forEach(it=>{
-    if(!map[it.sku]) map[it.sku] = {sku:it.sku, descricao:it.descricao, valor:0, qtd:0};
-    map[it.sku].valor += it.valorTotal||0;
-    map[it.sku].qtd += it.qtd||0;
-  });
-  return Object.values(map);
-}
-function aggregateSaidaPorCliente(){
-  const map = {};
-  allSaidaItems().forEach(it=>{
-    const nome = (it.razaoSocial||'').trim() || (it.cliente!=null?String(it.cliente):'') || 'SEM CLIENTE';
-    const key = String(it.cliente||nome);
-    if(!map[key]) map[key] = {cliente:it.cliente, nome, valor:0, qtd:0, saidas:new Set()};
-    map[key].valor += it.valorTotal||0;
-    map[key].qtd += it.qtd||0;
-    map[key].saidas.add(it.ordemFrete);
-  });
-  return Object.values(map).map(c=>({...c, numSaidas:c.saidas.size})).sort((a,b)=>b.valor-a.valor);
-}
-function aggregateSaidaPorRegiao(field){
-  const map = {};
-  allSaidaItems().forEach(it=>{
-    const key = (it[field]||'').trim() || 'SEM ' + field.toUpperCase();
-    if(!map[key]) map[key] = {label:key, valor:0, qtd:0, clientes:new Set()};
-    map[key].valor += it.valorTotal||0;
-    map[key].qtd += it.qtd||0;
-    map[key].clientes.add(it.cliente);
-  });
-  return Object.values(map).map(r=>({...r, numClientes:r.clientes.size})).sort((a,b)=>b.valor-a.valor);
-}
-function renderComercialTab(){
-  const items = allSaidaItems();
-  const metrica = state.comercialMetrica;
-  const key = metrica==='valor' ? 'valor' : 'qtd';
-  const fmt = metrica==='valor' ? fmtMoney : fmtInt;
-
-  if(!items.length){
-    return `
-    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
-      <div><h2>Dashboard Comercial</h2><p>Curva ABC, ranking de clientes e de região atendida — a partir dos itens lançados na aba Saída.</p></div>
-    </div>
-    <div class="card"><div class="card-sub" style="text-align:center;padding:24px 0;margin:0;">Nenhuma saída lançada ainda — importe uma planilha com a aba Saída preenchida.</div></div>`;
-  }
-
-  const totalValor = items.reduce((s,it)=>s+(it.valorTotal||0),0);
-  const totalQtd = items.reduce((s,it)=>s+(it.qtd||0),0);
-  const clientesDistintos = new Set(items.map(it=>it.cliente)).size;
-  const cidadesDistintas = new Set(items.map(it=>(it.cidade||'').trim()).filter(Boolean)).size;
-
-  const porSku = computeABC(aggregateSaidaPorSku(), key);
-  const top15 = porSku.slice(0,15).map(r=>({label:`${r.sku} · ${(r.descricao||'').slice(0,28)}`, value:r[key], color: r.classe==='A'?'var(--ok)':(r.classe==='B'?'var(--reembalar)':'var(--descarte)')}));
-
-  const porCliente = aggregateSaidaPorCliente();
-  const porCidade = aggregateSaidaPorRegiao('cidade');
-  const porBairro = aggregateSaidaPorRegiao('bairro');
-
-  const classeInfo = {A:['soft-ok','Classe A'], B:['soft-reembalar','Classe B'], C:['soft-descarte','Classe C']};
-  const abcRows = porSku.map(r=>{
-    const [cls,label] = classeInfo[r.classe];
-    return `<tr>
-      <td class="mono">${r.sku}</td>
-      <td class="desc-cell"><b>${esc(r.descricao)}</b></td>
-      <td class="num">${fmt(r[key])}</td>
-      <td class="num">${r.pct.toFixed(2)}%</td>
-      <td class="num">${r.pctAcum.toFixed(2)}%</td>
-      <td><span class="occ-tag ${cls}">${label}</span></td>
-    </tr>`;
-  }).join('');
-
-  const clienteRows = porCliente.slice(0,50).map(c=>`
-    <tr>
-      <td class="desc-cell"><b>${esc(c.nome)}</b>${c.cliente?`<span class="meta">Cód. ${esc(c.cliente)}</span>`:''}</td>
-      <td class="num">${fmtInt(c.numSaidas)}</td>
-      <td class="num">${fmtInt(c.qtd)}</td>
-      <td class="num">${fmtMoney(c.valor)}</td>
-    </tr>`).join('') || `<tr class="empty-row"><td colspan="4">Nenhum cliente encontrado.</td></tr>`;
-
-  const cidadeRows = porCidade.map(r=>`
-    <tr>
-      <td class="desc-cell"><b>${esc(r.label)}</b></td>
-      <td class="num">${fmtInt(r.numClientes)}</td>
-      <td class="num">${fmtInt(r.qtd)}</td>
-      <td class="num">${fmtMoney(r.valor)}</td>
-    </tr>`).join('') || `<tr class="empty-row"><td colspan="4">Nenhuma cidade encontrada.</td></tr>`;
-
-  const bairroRows = porBairro.map(r=>`
-    <tr>
-      <td class="desc-cell"><b>${esc(r.label)}</b></td>
-      <td class="num">${fmtInt(r.numClientes)}</td>
-      <td class="num">${fmtInt(r.qtd)}</td>
-      <td class="num">${fmtMoney(r.valor)}</td>
-    </tr>`).join('') || `<tr class="empty-row"><td colspan="4">Nenhum bairro encontrado.</td></tr>`;
-
-  return `
-    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
-      <div>
-        <h2>Dashboard Comercial</h2>
-        <p>Curva ABC, ranking de clientes e de região atendida (cidade/bairro) — tudo a partir dos itens lançados na aba Saída.</p>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Visão</h3></div>
-      <div class="card-sub">Métrica usada na curva ABC e no gráfico Top 15.</div>
-      <div class="field" style="max-width:220px;">
-        <label for="comercial-metrica">Métrica</label>
-        <select id="comercial-metrica">
-          <option value="valor" ${metrica==='valor'?'selected':''}>Valor (R$)</option>
-          <option value="qtd" ${metrica==='qtd'?'selected':''}>Quantidade (cx)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Top 15 — mais vendidos</h3></div>
-      <div class="card-sub">Cor por classe: verde = A, roxo = B, vermelho = C.</div>
-      ${barChartH(top15, {padL:230, fmt})}
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Curva ABC completa</h3></div>
-      <div class="card-sub">${fmtInt(porSku.length)} SKU(s). Classe A = até 80% acumulado, B = até 95%, C = o restante (cauda longa).</div>
-      <div class="table-scroll" style="max-height:480px;"><table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">${metrica==='valor'?'Valor':'Qtd'}</th><th style="text-align:right">%</th><th style="text-align:right">% Acum.</th><th>Classe</th></tr></thead>
-        <tbody>${abcRows}</tbody>
-      </table></div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><h3>Ranking por cliente</h3></div>
-        <div class="card-sub">${fmtInt(porCliente.length)} cliente(s), ordenado pelo maior valor vendido.</div>
-        <div class="table-scroll" style="max-height:480px;"><table>
-          <thead><tr><th>Cliente</th><th style="text-align:right">Saídas</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
-          <tbody>${clienteRows}</tbody>
-        </table></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Ranking por cidade</h3></div>
-        <div class="card-sub">${fmtInt(porCidade.length)} cidade(s) atendidas.</div>
-        <div class="table-scroll" style="max-height:480px;"><table>
-          <thead><tr><th>Cidade</th><th style="text-align:right">Clientes</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
-          <tbody>${cidadeRows}</tbody>
-        </table></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Ranking por bairro</h3></div>
-      <div class="card-sub">${fmtInt(porBairro.length)} bairro(s) atendidos.</div>
-      <div class="table-scroll" style="max-height:420px;"><table>
-        <thead><tr><th>Bairro</th><th style="text-align:right">Clientes</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
-        <tbody>${bairroRows}</tbody>
-      </table></div>
-    </div>
-  `;
-}
-
-function computeGlobalKPIs(){
-  const estoque = state.data.estoque;
-  const cargas = filteredCargas();
-  const totalCxEstoque = estoque.reduce((s,r)=>s+ (r.qtdCx||0), 0);
-  const cd13Rows = itemsForDep('cd13');
-  const saldoReal = cd13Rows.reduce((s,r)=>s+(r.qtdCx||0),0);
-  const saldoRealPosicoes = new Set(cd13Rows.map(r=>r.endereco)).size;
-  let cxPrevista=0, cxConferida=0, avarias=0, excesso=0, divergAbs=0;
-  cargas.forEach(c=> c.items.forEach(it=>{
-    cxPrevista += it.qtdCx||0;
-    cxConferida += it.qtdConferida||0;
-    divergAbs += Math.abs(it.divergencia||0);
-    if((it.divergencia||0)>0) excesso += it.divergencia;
-    classifyItem(it).forEach(e=>{
-      if(e.tipo==='descarte' || e.tipo==='naoveio') avarias += e.qtd;
-    });
-  }));
-  const pctAvarias = cxPrevista ? (avarias/cxPrevista*100) : 0;
-  const acuracidade = cxPrevista ? Math.max(0,(1 - divergAbs/cxPrevista))*100 : 100;
-  return {
-    posicoes: estoque.length,
-    totalCxEstoque, saldoReal, saldoRealPosicoes,
-    cargasCount: cargas.length,
-    cxPrevista, cxConferida, avarias, excesso, pctAvarias, acuracidade,
-    paletes: state.data.paletesResumo
+function readWorkbook(file, cb){
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, {type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+    cb(rows);
   };
+  reader.readAsArrayBuffer(file);
 }
 
-function computePeriodBreakdown(){
-  const cargas = filteredCargas();
-  let cxPrevista=0, recebidoOk=0, avariaSlice=0, reembalarSlice=0, naoVeioSlice=0, quarentenaSlice=0, naoReconciliadoSlice=0;
-  cargas.forEach(c=> c.items.forEach(it=>{
-    const prevista = it.qtdCx||0;
-    cxPrevista += prevista;
-    const divergencia = it.divergencia||0;
-    const shortfall = Math.max(0, -divergencia);
-    const received = prevista - shortfall;
-
-    const qualidade = (it.avariaDescarte||0)+(it.reembalar||0)+(it.quarentena||0);
-    const effQualidade = Math.min(qualidade, received);
-    if(qualidade>0){
-      avariaSlice     += (it.avariaDescarte||0)/qualidade*effQualidade;
-      reembalarSlice  += (it.reembalar||0)/qualidade*effQualidade;
-      quarentenaSlice += (it.quarentena||0)/qualidade*effQualidade;
+document.getElementById('file-pedido').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  document.getElementById('fname-pedido').textContent = f.name;
+  document.getElementById('slot-pedido').classList.add('filled');
+  readWorkbook(f, rows => { pedidoRows = rows; tryRender(); });
+});
+document.getElementById('file-estoque').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  document.getElementById('fname-estoque').textContent = f.name;
+  document.getElementById('slot-estoque').classList.add('filled');
+  readWorkbook(f, rows => {
+    const header = rows[0];
+    const cProduto = findCol(header,'produto');
+    const cQtd = findCol(header,'qtdDisp');
+    estoqueMap = {};
+    for(let i=1;i<rows.length;i++){
+      const r = rows[i]; if(!r) continue;
+      const prod = normalizeCode(r[cProduto]);
+      if(!prod || prod.trim()==='') continue;
+      const qtd = toNum(r[cQtd]);
+      estoqueMap[prod] = (estoqueMap[prod]||0) + qtd;
     }
-    recebidoOk += received - effQualidade;
+    tryRender();
+  });
+});
 
-    const effNaoVeio = Math.min(it.naoVeio||0, shortfall);
-    naoVeioSlice += effNaoVeio;
-    naoReconciliadoSlice += shortfall - effNaoVeio;
-  }));
-  const totalFalta = naoVeioSlice+naoReconciliadoSlice;
-  return { cxPrevista, recebidoOk, avariaSlice, reembalarSlice, naoVeioSlice, quarentenaSlice, naoReconciliadoSlice, totalFalta };
+function tryRender(){
+  if(!pedidoRows || !estoqueMap) return;
+  document.getElementById('empty-state').style.display='none';
+  document.getElementById('dashboard').hidden = false;
+  processAndRender();
 }
 
-function computeDepKPIs(key){
-  const rows = itemsForDep(key);
-  const totalCx = rows.reduce((s,r)=>s+(r.qtdCx||0),0);
-  const enderecos = new Set(rows.map(r=>r.endereco));
-  const skus = new Set(rows.map(r=>r.sku));
-  const pctDoEstoque = state.data.estoque.length ? (totalCx / state.data.estoque.reduce((s,r)=>s+(r.qtdCx||0),0) * 100) : 0;
-  const paletesEstimados = key==='cd13' ? null : rows.length;
+let state = null;
+let skuIndex = new Map();
 
-  const tipoMap = {quarentena:'quarentena', reembalar:'reembalar', descarte:'descarte', cd13:null};
-  let cargaQtd = 0;
-  if(tipoMap[key]){
-    filteredCargas().forEach(c=> c.items.forEach(it=>{
-      classifyItem(it).forEach(e=>{
-        if(e.tipo===tipoMap[key]) cargaQtd += e.qtd;
-        if(key==='descarte' && e.tipo==='naoveio') cargaQtd += e.qtd;
-      });
-    }));
+function fairAllocate(qtds, stock){
+  // aloca 'stock' entre os pedidos que disputam o mesmo SKU: menores atendidos
+  // integralmente primeiro; se não sobrar pra todos, divide igualmente o que resta.
+  const n = qtds.length;
+  const indices = qtds.map((qtd,idx)=>({idx, qtd})).sort((a,b)=>a.qtd-b.qtd);
+  let remaining = Math.max(stock,0);
+  const allocated = new Array(n).fill(0);
+  for(let i=0;i<indices.length;i++){
+    const countLeft = indices.length - i;
+    const fairShare = remaining / countLeft;
+    if(indices[i].qtd <= fairShare){
+      allocated[indices[i].idx] = indices[i].qtd;
+      remaining -= indices[i].qtd;
+    } else {
+      const equalShare = remaining / countLeft;
+      for(let j=i;j<indices.length;j++) allocated[indices[j].idx] = equalShare;
+      remaining = 0;
+      break;
+    }
   }
-  return { totalCx, posicoes: enderecos.size, skus: skus.size, pctDoEstoque, cargaQtd, paletesEstimados };
+  return allocated;
 }
 
-function categoryBreakdown(rows){
-  const map = {};
-  rows.forEach(r=>{
-    const c = normCat(r.categoria);
-    map[c] = (map[c]||0) + (r.qtdCx||0);
-  });
-  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
-}
-
-function skuTotalsFaturavel(rows){
-  const filtered = rows.filter(r=>matchesSearch(r) && matchesCategoria(r) && (!state.addressFilter || r.endereco===state.addressFilter));
-  const map = {};
-  filtered.forEach(r=>{
-    if(!map[r.sku]) map[r.sku] = { sku:r.sku, descricao:r.descricao, qtd:0 };
-    map[r.sku].qtd += r.qtdCx||0;
-  });
-  return Object.values(map).sort((a,b)=>b.qtd-a.qtd);
-}
-function skuTotalsTable(rows, limit){
-  const all = skuTotalsFaturavel(rows);
-  const shown = limit ? all.slice(0,limit) : all;
-  let body = shown.map(s=>`
-    <tr>
-      <td class="mono">${s.sku}</td>
-      <td class="desc-cell"><b>${esc(s.descricao)}</b></td>
-      <td class="num">${fmtInt(s.qtd)}</td>
-    </tr>`).join('');
-  if(!body) body = `<tr class="empty-row"><td colspan="3">Nenhum SKU encontrado para os filtros atuais.</td></tr>`;
-  const foot = `<div class="card-sub" style="margin-top:10px;margin-bottom:0;">${fmtInt(shown.length)} de ${fmtInt(all.length)} SKUs exibidos</div>`;
-  return `<div class="table-scroll" style="max-height:420px;"><table>
-    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx (CD13+Picking)</th></tr></thead>
-    <tbody>${body}</tbody></table></div>${foot}`;
-}
-
-/* ============ SVG CHART HELPERS ============ */
-function svgEl(tag, attrs){
-  let s = `<${tag}`;
-  for(const k in attrs) s += ` ${k}="${attrs[k]}"`;
-  return s + '/>';
-}
-function barChartH(data, opts){
-  opts = opts||{};
-  const fmt = opts.fmt || fmtInt;
-  const labelW = opts.padL || 150;
-  const max = Math.max(1, ...data.map(d=>d.value));
-  const rows = data.map(d=>{
-    const pct = Math.max(1.5, (d.value/max)*100);
-    return `<div class="hbar-row" style="grid-template-columns:${labelW}px 1fr auto;">
-      <div class="hbar-label" title="${esc(d.label)}">${esc(d.label)}</div>
-      <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${d.color||'var(--brand)'};"></div></div>
-      <div class="hbar-value">${fmt(d.value)}</div>
-    </div>`;
-  }).join('');
-  return `<div class="hbar-chart">${rows}</div>`;
-}
-function lineChart(data, opts){
-  opts = opts||{};
-  const w = opts.width||620, h = opts.height||220, padL=44, padR=18, padT=18, padB=30;
-  const max = Math.max(1, ...data.map(d=>d.value)) * 1.15;
-  const innerW = w-padL-padR, innerH = h-padT-padB;
-  const stepX = data.length>1 ? innerW/(data.length-1) : 0;
-  const pts = data.map((d,i)=>({
-    x: padL + i*stepX,
-    y: padT + innerH - (d.value/max)*innerH,
-    ...d
-  }));
-  const path = pts.map((p,i)=> (i===0?'M':'L')+p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ');
-  const area = path + ` L${pts[pts.length-1].x.toFixed(1)},${padT+innerH} L${pts[0].x.toFixed(1)},${padT+innerH} Z`;
-  let grid = '';
-  for(let i=0;i<=3;i++){
-    const y = padT + innerH*i/3;
-    grid += `<line x1="${padL}" y1="${y}" x2="${w-padR}" y2="${y}" class="gridline"/>`;
-    grid += `<text x="${padL-8}" y="${y+3}" text-anchor="end" class="axis-label">${fmtPct(max*(1-i/3))}</text>`;
-  }
-  let dots = pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="var(--descarte)" stroke="#fff" stroke-width="1.5"/>
-    <text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)-11}" text-anchor="middle" class="bar-value">${fmtPct(p.value)}</text>
-    <text x="${p.x.toFixed(1)}" y="${h-8}" text-anchor="middle" class="axis-label">${esc(p.label)}</text>`).join('');
-  return `<div class="chart-wrap"><svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
-    ${grid}
-    <path d="${area}" fill="var(--descarte)" opacity="0.08"/>
-    <path d="${path}" fill="none" stroke="var(--descarte)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    ${dots}
-  </svg></div>`;
-}
-function donut(pct, color, size){
-  size = size||96;
-  const r = size/2-9, c = 2*Math.PI*r, cx=size/2, cy=size/2;
-  const off = c*(1-Math.min(100,Math.max(0,pct))/100);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--line)" stroke-width="9"/>
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
-      stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>
-    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="16" fill="var(--ink)">${Math.round(pct)}%</text>
-  </svg>`;
-}
-function pieSlicePoint(cx,cy,r,angleDeg){
-  const rad = (angleDeg-90) * Math.PI/180;
-  return { x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad) };
-}
-function pieChart(slices, opts){
-  opts = opts||{};
-  const size = opts.size||168, r = size/2, cx=r, cy=r;
-  const total = slices.reduce((s,d)=>s+d.value,0);
-  if(!total) return `<div class="card-sub">Sem dados para exibir.</div>`;
-  let cum = 0, paths = '';
-  slices.filter(s=>s.value>0).forEach(s=>{
-    const startAngle = cum/total*360;
-    cum += s.value;
-    const endAngle = cum/total*360;
-    const p1 = pieSlicePoint(cx,cy,r,startAngle);
-    const p2 = pieSlicePoint(cx,cy,r,endAngle);
-    const large = (endAngle-startAngle) > 180 ? 1 : 0;
-    const pct = (s.value/total*100);
-    paths += `<path d="M${cx},${cy} L${p1.x.toFixed(2)},${p1.y.toFixed(2)} A${r},${r} 0 ${large} 1 ${p2.x.toFixed(2)},${p2.y.toFixed(2)} Z"
-      fill="${s.color}" stroke="var(--surface)" stroke-width="1.5"><title>${esc(s.label)}: ${fmtInt(s.value)} cx (${pct.toFixed(1)}%)</title></path>`;
-  });
-  const legend = slices.filter(s=>s.value>0).map(s=>{
-    const pct = (s.value/total*100);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;padding:3px 0;">
-      <span style="display:flex;align-items:center;gap:7px;min-width:0;">
-        <span style="width:9px;height:9px;border-radius:50%;background:${s.color};flex:none;"></span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s.label)}</span>
-      </span>
-      <span class="mono" style="flex:none;color:var(--ink-soft);">${fmtInt(s.value)} cx · ${pct.toFixed(1)}%</span>
-    </div>`;
-  }).join('');
-  return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="flex:none;">${paths}</svg>
-    <div style="flex:1;min-width:180px;">${legend}</div>
-  </div>`;
-}
-
-/* ============ RENDER: KPI STRIP ============ */
-function iconSvg(name){
-  const icons = {
-    box:'<path d="M3 8l9-5 9 5-9 5-9-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8M12 13v8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
-    truck:'<path d="M2 7h11v9H2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M13 10h4l3 3v3h-7z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="6" cy="18" r="1.6" stroke="currentColor" stroke-width="1.7"/><circle cx="16.5" cy="18" r="1.6" stroke="currentColor" stroke-width="1.7"/>',
-    check:'<path d="M4 12l6 6L20 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-    alert:'<path d="M12 3l10 18H2L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
-    target:'<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>',
-    layers:'<path d="M12 3l9 5-9 5-9-5 9-5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 13l9 5 9-5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
-    pallet:'<rect x="3" y="14" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M5 18v2M9 18v2M15 18v2M19 18v2" stroke="currentColor" stroke-width="1.6"/><rect x="6" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.6"/>',
-    flask:'<path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 006.2 21h11.6a2 2 0 001.7-3L14 9V3" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
-    repack:'<path d="M4 4h9v9H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M11 11l9 9M20 11v9h-9" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
-    trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+function processAndRender(){
+  const header = pedidoRows[0];
+  const col = {
+    doc: findCol(header,'doc'), razao: findCol(header,'razao'), cliente: findCol(header,'cliente'),
+    material: findCol(header,'material'), denom: findCol(header,'denom'), qtd: findCol(header,'qtd'),
+    peso: findCol(header,'peso'), precoUnit: findCol(header,'precoUnit'), imposto: findCol(header,'imposto'),
+    valTotal: findCol(header,'valTotal')
   };
-  return icons[name]||icons.box;
-}
-function kpiCard(label, value, sub, icon, colorVar, i){
-  return `<div class="kpi-card" style="animation-delay:${i*0.04}s">
-    <div class="kpi-top">
-      <span class="kpi-label">${label}</span>
-      <span class="kpi-ico" style="background:color-mix(in srgb, ${colorVar} 16%, white);color:${colorVar}"><svg viewBox="0 0 24 24" fill="none">${iconSvg(icon)}</svg></span>
-    </div>
-    <div class="kpi-value">${value}</div>
-    <div class="kpi-sub">${sub}</div>
-  </div>`;
-}
-function renderKPIs(){
-  if(state.tab==='comercial'){ renderComercialKPIs(); return; }
-  const k = computeGlobalKPIs();
-  const html = [
-    kpiCard('Cargas no período', fmtInt(k.cargasCount), `${filteredCargas().reduce((s,c)=>s+c.items.length,0)} itens movimentados`, 'truck', 'var(--brand)', 0),
-    kpiCard('% avarias no período', fmtPct(k.pctAvarias), `${fmtInt(k.avarias)} cx avariadas de ${fmtInt(k.cxPrevista)} cx carregadas`, 'alert', 'var(--descarte)', 1),
-    kpiCard('Estoque real (faturável)', fmtInt(k.saldoReal), `Saldo atual em ${fmtInt(k.saldoRealPosicoes)} endereços do CD13 — não inclui quarentena/reembalar/descarte`, 'layers', 'var(--cd13)', 2),
-    kpiCard('Acuracidade da conferência', fmtPct(k.acuracidade), `Base: ${fmtInt(k.cxPrevista)} cx previstas no período`, 'target', 'var(--reembalar)', 3),
-    kpiCard('Caixas no CD', fmtInt(k.totalCxEstoque), `Tudo que está fisicamente armazenado — inclui CD13, Quarentena, Reembalar e Avariar/Descarte`, 'check', 'var(--ok)', 4),
-    kpiCard('Paletes no parque', fmtInt(k.paletes.total), `${fmtInt(k.paletes.emUso)} em uso · ${fmtInt(k.paletes.vaziosBons+k.paletes.vaziosDanificados)} vazios`, 'pallet', 'var(--quarentena)', 5),
-  ].join('');
-  document.getElementById('kpi-grid').innerHTML = html;
-  document.getElementById('pill-cargas').textContent = `${state.data.cargas.length} cargas registradas`;
-  document.getElementById('pill-posicoes').textContent = `${state.data.estoque.length} posições de estoque · ${fmtInt(k.totalCxEstoque)} cx no total`;
-}
-/* mesmos 6 cartões fixos do topo, só que com números da Saída — usado só
-   quando a aba Dashboard Comercial está ativa. */
-function renderComercialKPIs(){
-  const items = allSaidaItems();
-  const totalValor = items.reduce((s,it)=>s+(it.valorTotal||0),0);
-  const totalQtd = items.reduce((s,it)=>s+(it.qtd||0),0);
-  const clientesDistintos = new Set(items.map(it=>it.cliente)).size;
-  const cidadesDistintas = new Set(items.map(it=>(it.cidade||'').trim()).filter(Boolean)).size;
-  const skusDistintos = new Set(items.map(it=>it.sku)).size;
-  const saidasCount = filteredSaidas().length;
-  const ticketMedio = clientesDistintos ? totalValor/clientesDistintos : 0;
-  const html = [
-    kpiCard('Valor total vendido', fmtMoney(totalValor), `${fmtInt(saidasCount)} saída(s) lançada(s)`, 'check', 'var(--ok)', 0),
-    kpiCard('Volume entregue', fmtInt(totalQtd), 'Caixas saídas no total', 'truck', 'var(--brand)', 1),
-    kpiCard('Clientes atendidos', fmtInt(clientesDistintos), 'Clientes distintos nas saídas', 'target', 'var(--reembalar)', 2),
-    kpiCard('Cidades atendidas', fmtInt(cidadesDistintas), 'Regiões distintas atendidas', 'layers', 'var(--cd13)', 3),
-    kpiCard('Ticket médio por cliente', fmtMoney(ticketMedio), 'Valor total ÷ clientes atendidos', 'flask', 'var(--quarentena)', 4),
-    kpiCard('SKUs vendidos', fmtInt(skusDistintos), 'SKUs distintos nas saídas', 'box', 'var(--descarte)', 5),
-  ].join('');
-  document.getElementById('kpi-grid').innerHTML = html;
-  document.getElementById('pill-cargas').textContent = `${state.data.cargas.length} cargas registradas`;
-  document.getElementById('pill-posicoes').textContent = `${state.data.estoque.length} posições de estoque · ${fmtInt(state.data.estoque.reduce((s,r)=>s+(r.qtdCx||0),0))} cx no total`;
-}
 
-/* ============ RENDER: TABS ============ */
-function renderTabs(){
-  const sapConf = computeSapConfronto();
-  const counts = {
-    geral:'', cd13:itemsForDep('cd13').length, quarentena:itemsForDep('quarentena').length,
-    reembalar:itemsForDep('reembalar').length, descarte:itemsForDep('descarte').length, cargas:state.data.cargas.length,
-    comercial:(state.data.saidas||[]).length,
-    validade: state.data.estoque.filter(r=>r.validade).length,
-    divergencia: filteredCargas().reduce((s,c)=>s+c.items.filter(it=>(it.divergencia||0)!==0).length,0),
-    sap: sapConf.porSku.filter(s=>!s.ok).length
-  };
-  document.getElementById('tabbar').innerHTML = TAB_ORDER.map(key=>{
-    const active = state.tab===key ? 'active':'';
-    const color = TAB_COLOR[key]==='brand' ? 'var(--brand)' : `var(--${TAB_COLOR[key]})`;
-    const countHtml = counts[key]!=='' ? `<span class="count">${counts[key]}</span>` : '';
-    return `<button class="tabbtn ${active}" data-tab="${key}">
-      <span class="dot" style="background:${color}"></span>${TAB_LABEL[key]}${countHtml}
-    </button>`;
-  }).join('');
-  document.querySelectorAll('.tabbtn').forEach(b=>{
-    b.addEventListener('click', ()=>{ state.tab=b.dataset.tab; state.addressFilter=null; renderAll(); });
-  });
-}
-
-/* ============ RENDER: TABLE ============ */
-function stockTable(rows, opts){
-  opts = opts||{};
-  const filtered = rows.filter(r=>matchesSearch(r) && matchesCategoria(r) && (!state.addressFilter || r.endereco===state.addressFilter));
-  const showAddr = opts.showAddr!==false;
-  let body = filtered.map(r=>{
-    const vs = validadeStatus(r.validade);
-    return `
-    <tr>
-      ${showAddr?`<td><span class="addr-chip">${esc(r.endereco)}</span></td>`:''}
-      <td class="mono">${r.sku}</td>
-      <td class="desc-cell"><b>${esc(r.descricao)}</b><span class="meta">${esc(normCat(r.categoria))} · ${esc(r.volume||'')} · ${esc(r.marca||'')}</span></td>
-      <td class="mono">${esc(r.lote)}</td>
-      <td class="num">${fmtInt(r.qtdCx)}</td>
-      <td>${r.validade?`<span class="occ-tag ${vs.cls}">${fmtDate(r.validade)}</span>`:'<span class="meta">—</span>'}</td>
-    </tr>`;}).join('');
-  if(!filtered.length) body = `<tr class="empty-row"><td colspan="6">Nenhum item encontrado para os filtros atuais.</td></tr>`;
-  return `<div class="table-scroll"><table>
-    <thead><tr>
-      ${showAddr?'<th>Endereço</th>':''}
-      <th>SKU</th><th>Descrição</th><th>Lote</th><th style="text-align:right">Cx</th><th>Validade</th>
-    </tr></thead>
-    <tbody>${body}</tbody>
-  </table></div>
-  <div class="card-sub" style="margin-top:10px;margin-bottom:0;">${filtered.length} de ${rows.length} posições exibidas ${state.addressFilter?`· endereço <b>${esc(state.addressFilter)}</b> selecionado (<a href="#" id="clear-addr" style="color:var(--brand)">limpar</a>)`:''}</div>`;
-}
-
-/* ============ RENDER: RACK MAP (signature) ============ */
-function buildRackMap(){
-  const rows = itemsForDep('cd13');
-  const byAddr = {};
-  rows.forEach(r=>{
-    if(!byAddr[r.endereco]) byAddr[r.endereco] = {endereco:r.endereco, cx:0, items:[]};
-    byAddr[r.endereco].cx += r.qtdCx||0;
-    byAddr[r.endereco].items.push(r);
-  });
-  const maxCx = Math.max(1, ...Object.values(byAddr).map(a=>a.cx));
-
-  const declaredEmpty = new Set((state.data.enderecosVazios||[]).filter(a=>!byAddr[a]));
-
-  const rowMap = {};
-  const registerAddr = addr=>{
-    const m = String(addr).match(/^([A-Za-zÀ-ÿ]+)\s*0*(\d+)$/);
-    if(!m) return;
-    const label = m[1].toUpperCase();
-    const num = parseInt(m[2],10);
-    if(!rowMap[label]) rowMap[label] = new Set();
-    rowMap[label].add(num);
-  };
-  Object.keys(byAddr).forEach(registerAddr);
-  declaredEmpty.forEach(registerAddr);
-  const labels = Object.keys(rowMap);
-  labels.sort((a,b)=>{
-    if(a.length!==b.length) return a.length-b.length;
-    return a.localeCompare(b);
-  });
-  const maxCol = Math.max(36, ...labels.map(l=>Math.max(...rowMap[l])));
-
-  let rowsHtml = labels.map(label=>{
-    const nums = rowMap[label];
-    const cells = Array.from({length:maxCol},(_,i)=>i+1).map(n=>{
-      if(!nums.has(n)) return `<div class="cell empty"></div>`;
-      const addr = label + String(n).padStart(2,'0');
-      const info = byAddr[addr];
-      if(!info){
-        if(declaredEmpty.has(addr)){
-          const selected = state.addressFilter===addr ? 'selected' : '';
-          return `<div class="cell active livre ${selected}" data-addr="${addr}">
-            <div class="cell-tip"><b>${addr}</b><br>Posição livre</div>
-          </div>`;
-        }
-        return `<div class="cell empty" title="${addr} — livre"></div>`;
-      }
-      const intensity = 0.22 + 0.78*(info.cx/maxCx);
-      const match = state.search && (String(info.items[0].sku).includes(state.search.toLowerCase()) || info.items.some(it=>it.descricao.toLowerCase().includes(state.search.toLowerCase())) || addr.toLowerCase().includes(state.search.toLowerCase()));
-      const dimClass = state.search && !match ? 'style="opacity:.25"' : '';
-      const selected = state.addressFilter===addr ? 'selected' : '';
-      const first = info.items[0];
-      const semValidade = info.items.some(it=>!it.validade);
-      const tip = info.items.length>1
-        ? `${info.items.length} SKUs · ${fmtInt(info.cx)} cx`
-        : `<b>${first.sku}</b> · ${fmtInt(info.cx)} cx<br>${esc(first.descricao.slice(0,34))}`;
-      const alertaValidade = semValidade ? `<span class="cell-flag" title="Validade não informada">!</span>` : '';
-      return `<div class="cell active ${selected}" data-addr="${addr}" ${dimClass}
-        style="background:color-mix(in srgb, var(--cd13) ${Math.round(intensity*100)}%, white)">
-        ${alertaValidade}
-        <div class="cell-tip"><b>${addr}</b><br>${tip}${semValidade?'<br><b style="color:#FFB4A8">⚠ Validade não informada</b>':''}</div>
-      </div>`;
-    }).join('');
-    return `<div class="rack-row"><div class="rack-row-label">${label}</div><div class="rack-cells" style="grid-template-columns:repeat(${maxCol},minmax(0,1fr));">${cells}</div></div>`;
-  }).join('');
-
-  if(!labels.length){
-    return `<div class="card-sub">Nenhum endereço reconhecido no formato letra+número (ex.: A01) para desenhar o mapa.</div>`;
+  // 1) lê todas as linhas válidas, sem agrupar ainda
+  const rawItems = [];
+  for(let i=1;i<pedidoRows.length;i++){
+    const r = pedidoRows[i];
+    if(!r || r[col.doc]==null || String(r[col.doc]).trim()==='') continue;
+    const doc = String(r[col.doc]).trim();
+    const material = normalizeCode(r[col.material]);
+    const qtd = toNum(r[col.qtd]);
+    const peso = toNum(r[col.peso]);
+    const valTotal = toNum(r[col.valTotal]);
+    const imposto = col.imposto>=0 ? toNum(r[col.imposto]) : 0;
+    const precoUnit = col.precoUnit>=0 ? toNum(r[col.precoUnit]) : (qtd? valTotal/qtd : 0);
+    rawItems.push({
+      doc, cliente: col.razao>=0? r[col.razao] : (col.cliente>=0? r[col.cliente]:''),
+      material, denom: col.denom>=0? r[col.denom]:'', qtd, peso, precoUnit, valTotal, imposto
+    });
   }
 
-  const semValidadeCount = Object.values(byAddr).filter(a=>a.items.some(it=>!it.validade)).length;
-  const legendLivre = declaredEmpty.size ? `<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--surface);border:1.5px dashed var(--cd13);display:inline-block;"></span>livre (declarado)</span>` : '';
-  const legendValidade = semValidadeCount ? `<span style="display:flex;align-items:center;gap:5px;"><span style="width:15px;height:15px;border-radius:50%;background:var(--descarte);color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;">!</span>${fmtInt(semValidadeCount)} sem validade informada</span>` : '';
-  return `<div class="rackmap-legend">
-      <span>Mapa físico do CD13 — cada célula é um endereço de rack. Ruas detectadas automaticamente a partir dos endereços cadastrados. Intensidade = volume de caixas.</span>
-      ${legendLivre}
-      ${legendValidade}
-      <span class="legend-scale">
-        <span style="background:color-mix(in srgb, var(--cd13) 25%, white)"></span>
-        <span style="background:color-mix(in srgb, var(--cd13) 55%, white)"></span>
-        <span style="background:var(--cd13)"></span>
-      </span>
-      <span>menos → mais caixas</span>
-    </div>
-    <div class="rackmap">${rowsHtml}</div>`;
+  // 2) agrupa por material e faz a alocação justa (fair-share) do estoque disponível
+  const porMaterial = new Map();
+  rawItems.forEach(it=>{
+    if(!porMaterial.has(it.material)) porMaterial.set(it.material, []);
+    porMaterial.get(it.material).push(it);
+  });
+  porMaterial.forEach((items, material)=>{
+    const estoque = estoqueMap[material] || 0;
+    const alocado = fairAllocate(items.map(it=>it.qtd), estoque);
+    items.forEach((it,i)=>{
+      const qtdAlocada = alocado[i];
+      const fracao = it.qtd>0 ? qtdAlocada/it.qtd : 0;
+      it.estoque = estoque;
+      it.qtdAlocada = qtdAlocada;
+      it.falta = it.qtd - qtdAlocada;
+      it.atende = qtdAlocada >= it.qtd - 1e-9;
+      it.parcial = qtdAlocada > 1e-9 && qtdAlocada < it.qtd - 1e-9;
+      it.corte = qtdAlocada <= 1e-9;
+      it.qtdCorte = qtdAlocada;
+      it.pesoCorte = it.peso * fracao;
+      it.valorCorte = it.valTotal * fracao;
+      it.impostoCorte = it.imposto * fracao;
+    });
+  });
+
+  // 3) agrupa por pedido pra exibição
+  const pedidosMap = new Map();
+  rawItems.forEach(it=>{
+    if(!pedidosMap.has(it.doc)) pedidosMap.set(it.doc, {doc: it.doc, cliente: it.cliente, items: []});
+    pedidosMap.get(it.doc).items.push(it);
+  });
+
+  const pedidos = Array.from(pedidosMap.values()).map(p=>{
+    const s = {qtd:0,peso:0,valTotal:0,imposto:0,qtdCorte:0,pesoCorte:0,valorCorte:0,impostoCorte:0};
+    p.items.forEach(it=>{
+      s.qtd+=it.qtd; s.peso+=it.peso; s.valTotal+=it.valTotal; s.imposto+=it.imposto;
+      s.qtdCorte+=it.qtdCorte; s.pesoCorte+=it.pesoCorte; s.valorCorte+=it.valorCorte; s.impostoCorte+=it.impostoCorte;
+    });
+    p.sub = s;
+    return p;
+  });
+
+  const grand = {qtd:0,peso:0,valTotal:0,imposto:0,qtdCorte:0,pesoCorte:0,valorCorte:0,impostoCorte:0};
+  pedidos.forEach(p=>{
+    grand.qtd+=p.sub.qtd; grand.peso+=p.sub.peso; grand.valTotal+=p.sub.valTotal; grand.imposto+=p.sub.imposto;
+    grand.qtdCorte+=p.sub.qtdCorte; grand.pesoCorte+=p.sub.pesoCorte; grand.valorCorte+=p.sub.valorCorte; grand.impostoCorte+=p.sub.impostoCorte;
+  });
+
+  state = {pedidos, grand};
+  renderAll();
 }
 
-/* ============ RENDER: DEPOSIT PANEL ============ */
-function renderDepPanel(key){
-  const def = DEP_GROUPS[key];
-  const rows = itemsForDep(key);
-  const kp = computeDepKPIs(key);
-  const cats = categoryBreakdown(rows).slice(0,7);
-  const chartColors = {cd13:'var(--cd13)', quarentena:'var(--quarentena)', reembalar:'var(--reembalar)', descarte:'var(--descarte)'};
-  const barData = cats.map(([label,value])=>({label: label.length>22?label.slice(0,20)+'…':label, value, color:chartColors[key]}));
+// ---------- Custo de Frete (Frota Própria) ----------
+const VEHICLE_PARAMS = {
+  'Toco':    { kml: 4.1, manutFator: 0.25, valorVeiculo: 450000,  ipvaAnual: 450000*0.015, motoristaDefault: 230, ajudanteDefault: 125 },
+  'Truck':   { kml: 3.5, manutFator: 0.25, valorVeiculo: 650000,  ipvaAnual: 650000*0.015, motoristaDefault: 235, ajudanteDefault: 125 },
+  'Bitruck': { kml: 3.0, manutFator: 0.25, valorVeiculo: 850000,  ipvaAnual: 13750,         motoristaDefault: 235, ajudanteDefault: 125 },
+  'Carreta': { kml: 2.7, manutFator: 0.25, valorVeiculo: 1000000, ipvaAnual: 1000000*0.015, motoristaDefault: 288, ajudanteDefault: 0 },
+  'Bitrem':  { kml: 2.0, manutFator: 0.40, valorVeiculo: 1200000, ipvaAnual: 1200000*0.015, motoristaDefault: 288, ajudanteDefault: 0 }
+};
 
-  const miniKpis = [
-    `<div class="mini-kpi"><div class="l">Posições ocupadas</div><div class="v">${fmtInt(kp.posicoes)}</div></div>`,
-    `<div class="mini-kpi"><div class="l">Caixas armazenadas agora</div><div class="v">${fmtInt(kp.totalCx)}</div></div>`,
+function computeFreteFrota(){
+  const km = toNumUI(document.getElementById('ff-km').value);
+  const veiculo = document.getElementById('ff-veiculo').value;
+  const dias = toNumUI(document.getElementById('ff-dias').value) || 1;
+  const precoLitro = toNumUI(document.getElementById('ff-preco-litro').value);
+  const pedagio = toNumUI(document.getElementById('ff-pedagio').value);
+  const hospJanta = toNumUI(document.getElementById('ff-hospjanta').value);
+  const motorista = toNumUI(document.getElementById('ff-motorista').value);
+  const ajudante = toNumUI(document.getElementById('ff-ajudante').value);
+
+  const vp = VEHICLE_PARAMS[veiculo] || VEHICLE_PARAMS['Toco'];
+  const litros = vp.kml ? km / vp.kml : 0;
+  const combustivel = litros * precoLitro;
+  const manutencao = combustivel * vp.manutFator;
+  const depreciacao = vp.valorVeiculo / 120 / 30 * dias;
+  const ipva = vp.ipvaAnual / 365 * dias;
+  const total = combustivel + pedagio + manutencao + hospJanta + motorista + ajudante + depreciacao + ipva;
+  const porKm = km>0 ? total/km : 0;
+
+  return {litros, combustivel, manutencao, depreciacao, ipva, total, porKm};
+}
+
+function renderFreteFrota(){
+  const r = computeFreteFrota();
+  document.getElementById('ff-out-litros').textContent = r.litros.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' L';
+  document.getElementById('ff-out-combustivel').textContent = fmtBRL(r.combustivel);
+  document.getElementById('ff-out-manutencao').textContent = fmtBRL(r.manutencao);
+  document.getElementById('ff-out-depreciacao').textContent = fmtBRL(r.depreciacao);
+  document.getElementById('ff-out-ipva').textContent = fmtBRL(r.ipva);
+  document.getElementById('ff-out-total').textContent = fmtBRL(r.total);
+  document.getElementById('ff-out-porkm').textContent = r.porKm.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+document.getElementById('ff-veiculo').addEventListener('change', ()=>{
+  const vp = VEHICLE_PARAMS[document.getElementById('ff-veiculo').value];
+  document.getElementById('ff-motorista').value = vp.motoristaDefault;
+  document.getElementById('ff-ajudante').value = vp.ajudanteDefault;
+  renderFreteFrota();
+  saveConfig();
+});
+['ff-km','ff-dias','ff-preco-litro','ff-pedagio','ff-hospjanta','ff-motorista','ff-ajudante'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderFreteFrota);
+});
+
+function computeBoxesPerPallet(){
+  const pl = toNumUI(document.getElementById('pallet-l').value);
+  const pw = toNumUI(document.getElementById('pallet-w').value);
+  const bl = toNumUI(document.getElementById('box-l').value);
+  const bw = toNumUI(document.getElementById('box-w').value);
+  const layers = toNumUI(document.getElementById('pallet-layers').value);
+  const orient1 = Math.floor(pl/bl) * Math.floor(pw/bw);
+  const orient2 = Math.floor(pl/bw) * Math.floor(pw/bl);
+  const perLayer = Math.max(orient1, orient2);
+  return Math.max(perLayer,0) * Math.max(layers,0);
+}
+function paletesDe(qtdCaixas){
+  const bpp = computeBoxesPerPallet();
+  if(!bpp) return 0;
+  return Math.ceil(qtdCaixas / bpp);
+}
+function fracaoPaleteDe(qtdCaixas){
+  const bpp = computeBoxesPerPallet();
+  if(!bpp) return 0;
+  return qtdCaixas / bpp;
+}
+function renderPalletInfo(){
+  const bpp = computeBoxesPerPallet();
+  document.getElementById('boxes-per-pallet').textContent = bpp || '—';
+}
+
+function computeFreight(){
+  const pct = toNumUI(document.getElementById('rate-pct').value)/100;
+  const totalComCorteEImposto = state.grand.valorCorte + state.grand.impostoCorte;
+  const verba = pct * totalComCorteEImposto;
+  const pesoCorte = state.grand.pesoCorte; // kg — carga real que vai pra rota
+
+  const vehicles = [
+    {name:'Vuc',          cost: toNumUI(document.getElementById('rate-vuc').value),   cap: toNumUI(document.getElementById('cap-vuc').value)},
+    {name:'3/4',          cost: toNumUI(document.getElementById('rate-34').value),    cap: toNumUI(document.getElementById('cap-34').value)},
+    {name:'Toco',         cost: toNumUI(document.getElementById('rate-toco').value),  cap: toNumUI(document.getElementById('cap-toco').value)},
+    {name:'Truck/Bitruck',cost: toNumUI(document.getElementById('rate-truck').value), cap: toNumUI(document.getElementById('cap-truck').value)}
   ];
-  if(key==='cd13'){
-    miniKpis.push(`<div class="mini-kpi"><div class="l">Paletes em uso (parque)</div><div class="v">${fmtInt(state.data.paletesResumo.emUso)}</div></div>`);
+
+  // 1) peso é obrigatório: só entram veículos com capacidade >= carga
+  const cabem = vehicles.filter(v => v.cap >= pesoCorte);
+
+  let chosen, chosenCost, chosenCap, note;
+  if(cabem.length === 0){
+    // nem o maior veículo comporta o peso — sugere o maior mesmo assim e avisa
+    const maior = vehicles[vehicles.length-1];
+    chosen = maior.name; chosenCost = maior.cost; chosenCap = maior.cap;
+    note = `peso (${pesoCorte.toFixed(0)}kg) excede a capacidade do maior veículo — pode precisar de mais de 1 veículo`;
   } else {
-    miniKpis.push(`<div class="mini-kpi"><div class="l">Paletes estimados <span title="1 palete por linha de estoque">(1 por linha)</span></div><div class="v">${fmtInt(kp.paletesEstimados)}</div></div>`);
+    // 2) entre os que comportam o peso, escolhe o mais barato dentro da verba;
+    //    se nenhum couber na verba, fica com o mais barato que ainda comporta o peso
+    const dentroDaVerba = cabem.filter(v => v.cost <= verba).sort((a,b)=>a.cost-b.cost);
+    const escolhido = dentroDaVerba[0] || [...cabem].sort((a,b)=>a.cost-b.cost)[0];
+    chosen = escolhido.name; chosenCost = escolhido.cost; chosenCap = escolhido.cap;
+    note = dentroDaVerba.length ? null : 'nenhum veículo com capacidade suficiente cabe na verba — custo vai acima do liberado';
   }
-  if(key==='quarentena') miniKpis.push(`<div class="mini-kpi"><div class="l">% do estoque total</div><div class="v">${fmtPct(kp.pctDoEstoque)}</div></div>`);
 
-  const historicoNote = (key==='reembalar'||key==='descarte'||key==='quarentena') ? `<div class="card-sub" style="margin:-8px 0 14px;">"Caixas armazenadas agora" vem direto da aba Estoque — é uma foto do momento atual, não soma o histórico de conferências. Para ver quanto já foi sinalizado como ${key==='reembalar'?'reembalar':key==='descarte'?'avaria':'quarentena'} ao longo de todas as cargas, veja a aba <b>Divergência</b> ou o gráfico "Resumo do período" na Visão Geral — são números diferentes de propósito, um é saldo, o outro é histórico.</div>` : '';
-
-  const quarentenaNote = key==='quarentena' ? `<div class="card-sub" style="margin:-8px 0 14px;">📍 Fisicamente é <b>uma única posição</b> no armazém — o painel estima <b>1 palete por linha</b> de lote/SKU alocada ali.</div>` : '';
-
-  const rackSection = key==='cd13' ? `
-    <div class="card">
-      <div class="card-head"><h3>Mapa de racks — corredores de armazenagem e picking (PJ)</h3></div>
-      <div class="card-sub">Clique em uma célula para filtrar a tabela pelo endereço.</div>
-      ${buildRackMap()}
-    </div>` : '';
-
-  return `
-    <div class="dep-hero bg-${def.color}">
-      <div>
-        <h2>${def.nome} ${key==='cd13'?'<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.22);padding:3px 10px;border-radius:999px;vertical-align:middle;margin-left:6px;">SALDO FATURÁVEL</span>':'<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.16);padding:3px 10px;border-radius:999px;vertical-align:middle;margin-left:6px;">FORA DO SALDO FATURÁVEL</span>'}</h2>
-        <p>${def.desc}</p>
-      </div>
-      <div class="dep-hero-stats">
-        <div class="dep-hero-stat"><b>${fmtInt(kp.posicoes)}</b><span>Posições</span></div>
-        <div class="dep-hero-stat"><b>${fmtInt(kp.totalCx)}</b><span>Caixas</span></div>
-        <div class="dep-hero-stat"><b>${fmtInt(kp.skus)}</b><span>SKUs distintos</span></div>
-      </div>
-    </div>
-
-    ${quarentenaNote}
-    ${historicoNote}
-    <div class="mini-kpis">
-      ${miniKpis.join('')}
-    </div>
-
-    ${rackSection}
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><h3>Posições em ${def.label}</h3></div>
-        <div class="card-sub">${fmtInt(rows.length)} linhas de estoque nesta área.</div>
-        <div id="table-${key}">${stockTable(rows)}</div>
-      </div>
-      <div class="card">
-        ${key==='cd13' ? (()=>{ const skuList = skuTotalsFaturavel(rows); return `
-          <div class="card-head"><h3>Total por SKU — saldo faturável <span style="font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle;">${fmtInt(skuList.length)} SKU${skuList.length===1?'':'s'}</span></h3></div>
-          <div class="card-sub">Soma de caixas por SKU em CD13 + Picking juntos (sem distinguir de qual dos dois veio). O contador acima mostra quantos SKUs distintos estão cadastrados nessas áreas hoje — sobe conforme novos itens forem lançados. Clique num endereço no mapa, ou busque um SKU/descrição, para ver só o total daquele item.</div>
-          ${skuTotalsTable(rows, null)}
-        `; })() : `
-          <div class="card-head"><h3>Caixas por categoria</h3></div>
-          <div class="card-sub">Distribuição do volume armazenado nesta área.</div>
-          ${barData.length ? barChartH(barData,{width:400}) : '<div class="card-sub">Sem itens nesta área.</div>'}
-        `}
-      </div>
-    </div>
-  `;
-}
-
-/* ============ RENDER: VISÃO GERAL ============ */
-function renderGeral(){
-  const k = computeGlobalKPIs();
-  const cargas = filteredCargas();
-
-  const avariaLine = cargas.map(c=>{
-    let prev=0, avar=0;
-    c.items.forEach(it=>{
-      prev += it.qtdCx||0;
-      classifyItem(it).forEach(e=>{ if(e.tipo==='descarte'||e.tipo==='naoveio') avar+=e.qtd; });
-    });
-    return {label: c.data.split('-').reverse().slice(0,2).join('/'), value: prev? avar/prev*100 : 0};
-  });
-
-  const skuMap = {};
-  cargas.forEach(c=>c.items.forEach(it=>{
-    classifyItem(it).forEach(e=>{
-      if(e.tipo==='descarte'||e.tipo==='naoveio'){
-        skuMap[it.sku] = (skuMap[it.sku]||0) + e.qtd;
-      }
-    });
-  }));
-  const topSkus = Object.entries(skuMap).sort((a,b)=>b[1]-a[1]).slice(0,7)
-    .map(([sku,value])=>({label:sku, value, color:'var(--descarte)'}));
-
-  const depTotals = TAB_ORDER.filter(k=>DEP_GROUPS[k]).map(key=>{
-    const rows = itemsForDep(key);
-    return {key, label:DEP_GROUPS[key].label, cx: rows.reduce((s,r)=>s+(r.qtdCx||0),0), color:`var(--${DEP_GROUPS[key].color})`};
-  });
-  const maxDep = Math.max(1,...depTotals.map(d=>d.cx));
-
-  return `
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><h3>% de avarias por dia de carga</h3></div>
-        <div class="card-sub">Percentual sobre as caixas previstas de cada carga (descarte + não veio).</div>
-        ${avariaLine.length ? lineChart(avariaLine) : '<div class="card-sub">Nenhuma carga no período selecionado.</div>'}
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>SKUs com mais avarias</h3></div>
-        <div class="card-sub">Caixas faltantes/descartadas por SKU na conferência.</div>
-        ${topSkus.length ? barChartH(topSkus,{width:400}) : '<div class="card-sub">Sem avarias no período.</div>'}
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Estoque por depósito</h3></div>
-      <div class="card-sub">Caixas armazenadas em cada uma das quatro áreas. Apenas o <b class="acc-cd13">CD13</b> compõe o saldo real/faturável — as demais áreas ficam fora do estoque vendável.</div>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:6px;">
-        ${depTotals.map(d=>`
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:5px;">
-              <span style="display:flex;align-items:center;gap:8px;">
-                <span style="font-weight:600;color:${d.color}">${d.label}</span>
-                <span class="tag" style="background:${d.key==='cd13'?'var(--ok-soft)':'var(--surface-soft)'};color:${d.key==='cd13'?'#166B44':'var(--ink-faint)'};">${d.key==='cd13'?'Faturável':'Não faturável'}</span>
-              </span>
-              <span class="mono">${fmtInt(d.cx)} cx</span>
-            </div>
-            <div style="height:10px;border-radius:6px;background:var(--surface-soft);overflow:hidden;">
-              <div style="height:100%;width:${(d.cx/maxDep*100).toFixed(1)}%;background:${d.color};border-radius:6px;"></div>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-head"><h3>Ocupação do parque de paletes</h3></div>
-        <div class="card-sub">Situação consolidada dos paletes no CD13.</div>
-        <div style="display:flex;align-items:center;gap:22px;">
-          ${donut(k.paletes.total ? k.paletes.emUso/k.paletes.total*100 : 0, 'var(--brand)', 108)}
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;">
-            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--brand);margin-right:7px;"></span>Em uso (estoque) — <b>${fmtInt(k.paletes.emUso)}</b></div>
-            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:7px;"></span>Vazios bons — <b>${fmtInt(k.paletes.vaziosBons)}</b></div>
-            <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--descarte);margin-right:7px;"></span>Vazios danificados — <b>${fmtInt(k.paletes.vaziosDanificados)}</b></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3>Resumo do período</h3></div>
-        <div class="card-sub">Como as ${fmtInt(k.cxPrevista)} caixas previstas se dividiram na conferência. Avaria e Reembalar são qualidade do que <b>chegou</b> — não expliquem a diferença entre previstas e conferidas por conta própria; essa diferença vem principalmente de cargas ainda não conferidas ("não reconciliado" abaixo).</div>
-        ${(()=>{ const b = computePeriodBreakdown(); const slices = [
-            {label:'Recebido OK', value:b.recebidoOk, color:'var(--ok)'},
-            {label:'Avaria/Descarte', value:b.avariaSlice, color:'var(--descarte)'},
-            {label:'Reembalar', value:b.reembalarSlice, color:'var(--reembalar)'},
-            {label:'Não veio/Faltando', value:b.naoVeioSlice, color:'var(--quarentena)'},
-            {label:'Quarentena', value:b.quarentenaSlice, color:'var(--cd13)'},
-            {label:'Não reconciliado (não conferido)', value:b.naoReconciliadoSlice, color:'#C7CCD6'},
-          ]; return pieChart(slices,{size:168}); })()}
-        <div class="card-sub" style="margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line-soft);">
-          <b class="acc-ok">+${fmtInt(k.excesso)} cx de excesso recebido</b> no período — caixas recebidas além do previsto, não entram no gráfico acima porque não são parte das ${fmtInt(k.cxPrevista)} cx previstas.
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/* ============ ABA: VALIDADE ============ */
-function renderValidadeTab(){
-  const rows = state.data.estoque;
-  const comData = rows.filter(r=>r.validade);
-  const semData = rows.filter(r=>!r.validade);
-  const tally = {vencido:0, critico:0, atencao:0, ok:0};
-  comData.forEach(r=>{
-    const vs = validadeStatus(r.validade);
-    if(vs.tag==='Vencido') tally.vencido++;
-    else if(vs.tag==='Crítico') tally.critico++;
-    else if(vs.tag==='Atenção') tally.atencao++;
-    else tally.ok++;
-  });
-  return `
-    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
-      <div>
-        <h2>Ranking de validade</h2>
-        <p>Todas as ${fmtInt(comData.length)} posições com validade cadastrada, ordenadas da mais próxima de vencer para a mais distante (FEFO — primeiro a vencer, primeiro a sair).${semData.length?` ${fmtInt(semData.length)} posições sem validade informada não entram no ranking — veja a lista abaixo.`:''}</p>
-      </div>
-      <div class="dep-hero-stats">
-        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(tally.vencido+tally.critico)}</b><span>Vencidos/críticos</span></div>
-        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(tally.atencao)}</b><span>Atenção</span></div>
-        <div class="dep-hero-stat"><b style="color:#8FE0B3">${fmtInt(tally.ok)}</b><span>OK</span></div>
-        <div class="dep-hero-stat"><b style="color:#FFB4A8">${fmtInt(semData.length)}</b><span>Sem validade</span></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>Todas as posições, por proximidade de vencimento</h3></div>
-      <div class="card-sub">Use a busca no topo para filtrar por SKU, descrição ou endereço.</div>
-      ${validadeRankingTable(rows, null)}
-    </div>
-    ${renderSemValidadeCard(semData)}
-  `;
-}
-function sortableTh(label, col, align){
-  const active = state.semValidadeSort.col===col;
-  const arrow = active ? (state.semValidadeSort.dir===1?'▲':'▼') : '';
-  return `<th data-sort-col="${col}" style="cursor:pointer;user-select:none;${align?'text-align:right;':''}" title="Ordenar por ${label}">${label} <span style="color:var(--brand);font-size:9px;">${arrow}</span></th>`;
-}
-function renderSemValidadeCard(semData){
-  if(!semData.length) return '';
-  const deps = [...new Set(semData.map(r=>r.deposito))].sort();
-  const depFilterHtml = `<select id="semval-dep-filter" class="mono" style="border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;background:var(--surface-soft);">
-      <option value="">Todos os depósitos (${fmtInt(semData.length)})</option>
-      ${deps.map(d=>`<option value="${esc(d)}" ${state.semValidadeDep===d?'selected':''}>${esc(d)} (${fmtInt(semData.filter(r=>r.deposito===d).length)})</option>`).join('')}
-    </select>`;
-
-  let filtered = semData.filter(matchesSearch).filter(matchesCategoria);
-  if(state.semValidadeDep) filtered = filtered.filter(r=>r.deposito===state.semValidadeDep);
-  const { col, dir } = state.semValidadeSort;
-  filtered = filtered.slice().sort((a,b)=>{
-    const av=a[col], bv=b[col];
-    if(typeof av==='number' && typeof bv==='number') return (av-bv)*dir;
-    return String(av==null?'':av).localeCompare(String(bv==null?'':bv), 'pt-BR', {numeric:true}) * dir;
-  });
-
-  let body = filtered.map(r=>`
-    <tr>
-      <td><span class="addr-chip">${esc(r.endereco)}</span></td>
-      <td><span class="tag soft-${DEP_GROUPS_BY_RAW(r.deposito)}">${esc(r.deposito)}</span></td>
-      <td class="mono">${r.sku}</td>
-      <td class="desc-cell"><b>${esc(r.descricao)}</b></td>
-      <td class="mono">${esc(r.lote)}</td>
-      <td class="num">${fmtInt(r.qtdCx)}</td>
-    </tr>`).join('');
-  if(!body) body = `<tr class="empty-row"><td colspan="6">Nenhuma posição encontrada para os filtros atuais.</td></tr>`;
-  return `
-    <div class="card">
-      <div class="card-head"><h3>Posições sem validade informada <span style="font-size:11px;font-weight:700;background:#FFE4E1;color:#8A2A21;padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle;">${fmtInt(semData.length)}</span></h3></div>
-      <div class="card-sub">Nenhuma data de validade encontrada pra essa posição — normalmente porque o SKU+lote não foi localizado na aba SAP. Use essa lista pra mandar o conferente ir fisicamente no endereço e checar o motivo (produto sem lote legível, lote novo ainda não lançado no SAP, etc). Clique num título de coluna pra ordenar.</div>
-      <div style="margin-bottom:10px;">${depFilterHtml}</div>
-      <div class="table-scroll" style="max-height:420px;"><table>
-        <thead><tr>
-          ${sortableTh('Endereço','endereco')}
-          ${sortableTh('Depósito','deposito')}
-          ${sortableTh('SKU','sku')}
-          ${sortableTh('Descrição','descricao')}
-          ${sortableTh('Lote','lote')}
-          ${sortableTh('Cx','qtdCx',true)}
-        </tr></thead>
-        <tbody>${body}</tbody>
-      </table></div>
-      <div class="card-sub" style="margin-top:10px;margin-bottom:0;">${fmtInt(filtered.length)} de ${fmtInt(semData.length)} posições exibidas.</div>
-    </div>
-  `;
-}
-function validadeRankingTable(rows, limit){
-  const searchFiltered = rows.filter(matchesSearch).filter(matchesCategoria);
-  const comData = searchFiltered.filter(r=>r.validade).slice().sort((a,b)=> a.validade < b.validade ? -1 : a.validade > b.validade ? 1 : 0);
-  const semData = searchFiltered.filter(r=>!r.validade);
-  const shown = limit ? comData.slice(0, limit) : comData;
-  let body = shown.map(r=>{
-    const vs = validadeStatus(r.validade);
-    const diasTxt = vs.d==null?'—': vs.d<0 ? `${Math.abs(vs.d)} dias atrás` : `em ${fmtInt(vs.d)} dias`;
-    return `<tr>
-      <td class="mono">${r.sku}</td>
-      <td class="desc-cell"><b>${esc(r.descricao)}</b><span class="meta">${esc(r.lote)} · ${esc(r.endereco)}</span></td>
-      <td><span class="tag soft-${DEP_GROUPS_BY_RAW(r.deposito)}">${esc(r.deposito)}</span></td>
-      <td class="num">${fmtInt(r.qtdCx)}</td>
-      <td class="mono">${fmtDate(r.validade)}</td>
-      <td><span class="occ-tag ${vs.cls}">${vs.tag} · ${diasTxt}</span></td>
-    </tr>`;
-  }).join('');
-  if(!shown.length) body = `<tr class="empty-row"><td colspan="6">Nenhuma posição encontrada para os filtros atuais.</td></tr>`;
-  const foot = (limit && comData.length>limit) ? `<div class="card-sub" style="margin:10px 0 0;">Mostrando os ${limit} vencimentos mais próximos de ${comData.length} posições com validade${semData.length?` · ${semData.length} sem validade informada`:''}.</div>` : (semData.length ? `<div class="card-sub" style="margin:10px 0 0;">${comData.length} posições com validade · ${semData.length} sem validade informada.</div>` : '');
-  return `<div class="table-scroll" style="max-height:560px;"><table>
-    <thead><tr><th>SKU</th><th>Descrição</th><th>Depósito</th><th style="text-align:right">Cx</th><th>Validade</th><th>Status</th></tr></thead>
-    <tbody>${body}</tbody></table></div>${foot}`;
-}
-function DEP_GROUPS_BY_RAW(dep){
-  const nd = normDep(dep);
-  for(const k in DEP_GROUPS){ if(DEP_GROUPS[k].deps.map(normDep).includes(nd)) return DEP_GROUPS[k].color; }
-  return 'quarentena';
-}
-
-/* ============ ABA: DIVERGÊNCIA (QTD) ============ */
-function renderDivergenciaTab(){
-  const cargas = filteredCargas();
-  let allItems = [];
-  cargas.forEach(c=> c.items.forEach(it=> { if((it.divergencia||0)!==0) allItems.push({...it, cargaId:c.id, cargaTitulo:c.titulo}); }));
-  const searchFiltered = allItems.filter(matchesSearch).filter(matchesCategoria);
-  searchFiltered.sort((a,b)=> Math.abs(b.divergencia) - Math.abs(a.divergencia));
-
-  const totalFaltando = allItems.filter(it=>it.divergencia<0).reduce((s,it)=>s+Math.abs(it.divergencia),0);
-  const totalSobrando = allItems.filter(it=>it.divergencia>0).reduce((s,it)=>s+it.divergencia,0);
-  const naoReconciliadas = allItems.filter(it=>!itemReconciles(it)).length;
-
-  let body = searchFiltered.map(it=>{
-    const divClass = it.divergencia<0 ? 'occ-bad' : 'acc-ok';
-    const warn = !itemReconciles(it);
-    return `<tr>
-      <td><span class="tag" style="background:var(--surface-soft);color:var(--ink-soft);">${esc(it.cargaId)}</span></td>
-      <td class="mono">${it.sku}</td>
-      <td class="desc-cell"><b>${esc(it.descricao)}</b><span class="meta">${esc(normCat(it.categoria))}</span></td>
-      <td class="num">${fmtInt(it.qtdCx)}</td>
-      <td class="num">${fmtInt(it.qtdConferida)}</td>
-      <td class="num ${divClass}">${it.divergencia>0?'+':''}${fmtInt(it.divergencia)}</td>
-      <td class="num">${it.avariaDescarte?fmtInt(it.avariaDescarte):'—'}</td>
-      <td class="num">${it.reembalar?fmtInt(it.reembalar):'—'}</td>
-      <td>${warn?'<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;">⚠ não reconcilia</span>':'<span class="occ-tag soft-ok">OK</span>'}</td>
-    </tr>`;
-  }).join('');
-  if(!body) body = `<tr class="empty-row"><td colspan="9">Nenhuma divergência encontrada para os filtros atuais.</td></tr>`;
-
-  return `
-    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
-      <div>
-        <h2>Divergência de quantidade</h2>
-        <p>Todas as linhas de conferência onde a quantidade recebida difere da prevista, somando as ${fmtInt(cargas.length)} cargas do período selecionado.</p>
-      </div>
-      <div class="dep-hero-stats">
-        <div class="dep-hero-stat"><b style="color:#FF9E92">-${fmtInt(totalFaltando)}</b><span>Cx faltando</span></div>
-        <div class="dep-hero-stat"><b style="color:#8FE0B3">+${fmtInt(totalSobrando)}</b><span>Cx sobrando</span></div>
-        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(naoReconciliadas)}</b><span>Não reconciliadas</span></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3>Linhas com divergência</h3></div>
-      <div class="card-sub">Ordenado pela maior diferença absoluta. Avaria e Reembalar aparecem aqui só como referência — são itens que chegaram, não a causa da divergência. "Não reconcilia" indica que não há registro de "Não veio/Faltando" cobrindo essa diferença de quantidade — geralmente carga ainda não conferida.</div>
-      <div class="table-scroll" style="max-height:560px;"><table>
-        <thead><tr><th>Carga</th><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx prevista</th><th style="text-align:right">Cx conferida</th><th style="text-align:right">Divergência</th><th style="text-align:right">Avaria</th><th style="text-align:right">Reembalar</th><th>Status</th></tr></thead>
-        <tbody>${body}</tbody>
-      </table></div>
-    </div>
-  `;
-}
-
-/* ============ ABA: CONFRONTO SAP ============ */
-function renderSapTab(){
-  const { porLote, porSku } = computeSapConfronto();
-
-  const skuOk = porSku.filter(s=>s.ok).length;
-  const skuDivReal = porSku.filter(s=>!s.ok).length;
-  const loteSemSap = porLote.filter(l=>l.status==='sem_sap').length;
-  const loteSemWms = porLote.filter(l=>l.status==='sem_wms').length;
-  const loteSoLote = porLote.filter(l=>l.soLote).length;
-
-  const skuFiltered = porSku.filter(s => !state.search || String(s.sku).includes(state.search.toLowerCase()) || (s.descricao||'').toLowerCase().includes(state.search.toLowerCase()));
-  let skuBody = skuFiltered.map(s=>`
-    <tr>
-      <td class="mono">${s.sku}</td>
-      <td class="desc-cell"><b>${esc(s.descricao)}</b></td>
-      <td class="num">${fmtInt(s.wms)}</td>
-      <td class="num">${fmtInt(s.sap)}</td>
-      <td class="num ${s.diff===0?'occ-ok':(s.diff>0?'acc-ok':'occ-bad')}">${s.diff>0?'+':''}${fmtInt(s.diff)}</td>
-      <td>${s.ok?'<span class="occ-tag soft-ok">Bate certinho</span>':'<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;">⚠ Divergência real</span>'}</td>
-    </tr>`).join('');
-  if(!skuBody) skuBody = `<tr class="empty-row"><td colspan="6">Nenhum SKU encontrado para os filtros atuais.</td></tr>`;
-
-  const loteFiltered = porLote.filter(l => !state.search || String(l.sku).includes(state.search.toLowerCase()) || (l.descricao||'').toLowerCase().includes(state.search.toLowerCase()) || String(l.lote||'').includes(state.search));
-  const statusLabel = {ok:['Bate certinho','soft-ok'], diverge:['Divergência de qtd','' ], sem_sap:['Sem lastro no SAP','soft-descarte'], sem_wms:['Sem localização física','soft-quarentena']};
-  let loteBody = loteFiltered.map(l=>{
-    const [txt,cls] = statusLabel[l.status];
-    const clsFinal = l.status==='diverge' ? (l.soLote?'soft-quarentena':'soft-descarte') : cls;
-    const txtFinal = l.status==='diverge' ? (l.soLote? 'Só o lote diverge (total OK)' : 'Divergência real') : txt;
-    return `<tr>
-      <td class="mono">${l.sku}</td>
-      <td class="desc-cell"><b>${esc(l.descricao)}</b></td>
-      <td class="mono">${l.lote==null||l.lote==='null'?'—':esc(l.lote)}</td>
-      <td class="num">${l.wms?fmtInt(l.wms):'—'}</td>
-      <td class="num">${l.sap?fmtInt(l.sap):'—'}</td>
-      <td class="num ${l.diff===0?'occ-ok':(l.diff>0?'acc-ok':'occ-bad')}">${l.diff>0?'+':''}${fmtInt(l.diff)}</td>
-      <td><span class="occ-tag ${clsFinal}">${txtFinal}</span></td>
-    </tr>`;
-  }).join('');
-  if(!loteBody) loteBody = `<tr class="empty-row"><td colspan="7">Nenhum lote encontrado para os filtros atuais.</td></tr>`;
-
-  return `
-    <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
-      <div>
-        <h2>Confronto SAP × Físico</h2>
-        <p>Cruzamento do estoque físico (aba Estoque, <b>todos os depósitos somados</b> — CD13, Picking, Avaria, Reembalar, Quarentena) contra o saldo do SAP, por código (SKU) e por lote. Precisa somar tudo dos dois lados porque o SAP não separa "CD13" de "avaria" no total dele — uma caixa avariada continua contando no saldo do SAP até ser baixada do sistema. Exemplo: 10 cx no CD13 + 1 cx em avaria bate com SAP=11; comparar só o CD13 (10) contra o SAP (11) pareceria uma divergência de -1 que não existe de verdade. "Só o lote diverge" significa que o total do SKU bate — geralmente é lote gravado errado ou lotes do SAP consolidados numa única posição física, não perda real.</p>
-      </div>
-      <div class="dep-hero-stats">
-        <div class="dep-hero-stat"><b style="color:#8FE0B3">${fmtInt(skuOk)}</b><span>SKUs OK</span></div>
-        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(skuDivReal)}</b><span>SKUs c/ divergência real</span></div>
-        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(loteSoLote)}</b><span>Só lote diverge</span></div>
-        <div class="dep-hero-stat"><b style="color:#FF9E92">${fmtInt(loteSemSap)}</b><span>Sem lastro no SAP</span></div>
-        <div class="dep-hero-stat"><b style="color:#FFD98A">${fmtInt(loteSemWms)}</b><span>Sem localização física</span></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Resumo por código (SKU)</h3></div>
-      <div class="card-sub">Este é o número que importa para saldo e faturamento: soma de todos os lotes do SKU, físico contra SAP. Ordenado pela maior diferença absoluta.</div>
-      <div class="table-scroll" style="max-height:420px;"><table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Físico (WMS)</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
-        <tbody>${skuBody}</tbody>
-      </table></div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Detalhe por lote</h3></div>
-      <div class="card-sub">Abertura lote a lote. Use para investigar a causa de uma divergência de SKU, ou para achar lotes que o SAP mostra disponível mas não têm posição física registrada (e vice-versa).</div>
-      <div class="table-scroll" style="max-height:560px;"><table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Lote</th><th style="text-align:right">Físico (WMS)</th><th style="text-align:right">SAP</th><th style="text-align:right">Diferença</th><th>Status</th></tr></thead>
-        <tbody>${loteBody}</tbody>
-      </table></div>
-    </div>
-  `;
-}
-
-function occTagClass(tipo){
-  return {descarte:'soft-descarte', naoveio:'soft-descarte', reembalar:'soft-reembalar', quarentena:'soft-quarentena', excesso:'soft-ok', ok:'soft-ok', obs:'soft-quarentena', outro:'soft-quarentena'}[tipo]||'soft-quarentena';
-}
-function cargaConferenciaTable(c){
-  const filtered = c.items.filter(matchesSearch).filter(matchesCategoria);
-  let body = filtered.map(it=>{
-    const entries = classifyItem(it);
-    const tags = entries.filter(e=>e.tipo!=='obs').map(e=>`<span class="occ-tag ${occTagClass(e.tipo)}">${esc(e.raw||e.tipo)}</span>`).join('');
-    const obsEntry = entries.find(e=>e.tipo==='obs');
-    const obsTag = obsEntry ? `<span class="occ-tag" style="background:var(--surface-soft);color:var(--ink-soft);">${esc(obsEntry.raw)}</span>` : '';
-    const divClass = it.divergencia<0 ? 'occ-bad' : (it.divergencia>0 ? 'acc-ok' : 'occ-ok');
-    const warn = !itemReconciles(it) ? `<span class="occ-tag" style="background:#FFF1D6;color:#8A5B14;" title="Não há 'Não veio/Faltando' registrado cobrindo esta diferença de quantidade — Avaria/Reembalar não contam aqui, pois o item chegou">⚠ não reconcilia</span>` : '';
-    return `<tr>
-      <td class="mono">${it.sku}</td>
-      <td class="desc-cell"><b>${esc(it.descricao)}</b><span class="meta">${esc(normCat(it.categoria))} · ${esc(it.volume||'')}</span></td>
-      <td class="num">${fmtInt(it.qtdCx)}</td>
-      <td class="num">${fmtInt(it.qtdConferida)}</td>
-      <td class="num ${divClass}">${it.divergencia>0?'+':''}${fmtInt(it.divergencia)}</td>
-      <td>${tags || '<span class="occ-tag soft-ok">OK</span>'}${obsTag}${warn}</td>
-    </tr>`;
-  }).join('');
-  if(!filtered.length) body = `<tr class="empty-row"><td colspan="6">Nenhum item encontrado para os filtros atuais.</td></tr>`;
-  return `<div class="table-scroll" style="max-height:420px;"><table>
-    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx prevista</th><th style="text-align:right">Cx conferida</th><th style="text-align:right">Divergência</th><th>Ocorrência</th></tr></thead>
-    <tbody>${body}</tbody></table></div>`;
-}
-function renderCargas(){
-  const cargas = filteredCargas();
-  if(!cargas.length) return `<div class="card"><div class="card-sub" style="text-align:center;padding:24px 0;margin:0;">Nenhuma carga no período selecionado.</div></div>`;
-  const totalMismatch = cargas.reduce((s,c)=>s+c.items.filter(it=>!itemReconciles(it)).length,0);
-  const qualityBanner = totalMismatch>0 ? `<div class="card-sub" style="margin:0 0 12px;padding:9px 13px;background:#FFF1D6;color:#8A5B14;border-radius:8px;">⚠ ${totalMismatch} linha(s) com divergência de quantidade sem registro de "Não veio/Faltando" — geralmente carga ainda não conferida (Avaria e Reembalar não contam aqui, pois o item chegou).</div>` : '';
-  return qualityBanner + cargas.map((c,i)=>{
-    let prev=0, conf=0, avar=0;
-    c.items.forEach(it=>{
-      prev += it.qtdCx||0; conf += it.qtdConferida||0;
-      classifyItem(it).forEach(e=>{ if(e.tipo==='descarte'||e.tipo==='naoveio') avar += e.qtd; });
-    });
-    const pct = prev ? (avar/prev*100) : 0;
-    const open = state.openCarga===c.id ? 'open':'';
-    return `<div class="carga-card">
-      <div class="carga-top" data-carga="${c.id}">
-        <div class="carga-id">
-          <div class="num">NF</div>
-          <div>
-            <h4>${esc(c.titulo)} · NF ${esc(c.nf)}</h4>
-            <div class="meta">${esc(c.motorista)} · veículo ${esc(c.veiculo)} · ${c.data.split('-').reverse().join('/')}</div>
-          </div>
-        </div>
-        <div class="carga-stats">
-          <div><b>${c.totalPaletesInformado}</b><span>Paletes</span></div>
-          <div><b>${c.paletesVazios}</b><span>Vazios</span></div>
-          <div><b>${fmtInt(prev)}</b><span>Cx previstas</span></div>
-          <div><b class="${pct>1?'occ-bad':'occ-ok'}">${fmtPct(pct)}</b><span>Avarias</span></div>
-        </div>
-        <svg class="chev ${open}" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="carga-body ${open}" id="carga-body-${c.id}">
-        ${cargaConferenciaTable(c)}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-/* ============ MASTER RENDER ============ */
-function populateCategoriaFilter(){
-  const sel = document.getElementById('f-categoria');
-  const current = sel.value;
-  const cats = new Set(state.data.estoque.map(r=>normCat(r.categoria)));
-  state.data.cargas.forEach(c=>c.items.forEach(it=>cats.add(normCat(it.categoria))));
-  sel.innerHTML = '<option value="">Todas as categorias</option>' + [...cats].sort().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  sel.value = current;
+  return {verba, totalComCorteEImposto, pesoCorte, chosen, chosenCost, chosenCap, note};
 }
 
 function renderAll(){
   renderKPIs();
-  renderTabs();
-  const panels = TAB_ORDER.map(key=>{
-    let content = '';
-    if(key==='geral') content = renderGeral();
-    else if(key==='cargas') content = renderCargas();
-    else if(key==='validade') content = renderValidadeTab();
-    else if(key==='divergencia') content = renderDivergenciaTab();
-    else if(key==='sap') content = renderSapTab();
-    else if(key==='comercial') content = renderComercialTab();
-    else content = renderDepPanel(key);
-    return `<div class="panel ${state.tab===key?'active':''}" id="panel-${key}">${content}</div>`;
-  }).join('');
-  document.getElementById('panels').innerHTML = panels;
-  wireDynamicEvents();
+  renderTable();
+  renderGauge();
+  renderTransport();
+  renderPedidosList();
+  buildSkuIndex();
+  renderSkuSearch();
 }
 
-function wireDynamicEvents(){
-  const comercialMetrica = document.getElementById('comercial-metrica');
-  if(comercialMetrica) comercialMetrica.addEventListener('change', e=>{ state.comercialMetrica = e.target.value; renderAll(); });
-  document.querySelectorAll('.cell.active').forEach(c=>{
-    c.addEventListener('click', ()=>{
-      const addr = c.dataset.addr;
-      state.addressFilter = state.addressFilter===addr ? null : addr;
-      renderAll();
-    });
-  });
-  const clearAddr = document.getElementById('clear-addr');
-  if(clearAddr) clearAddr.addEventListener('click', (e)=>{ e.preventDefault(); state.addressFilter=null; renderAll(); });
-  document.querySelectorAll('.carga-top').forEach(t=>{
-    t.addEventListener('click', ()=>{
-      const id = t.dataset.carga;
-      state.openCarga = state.openCarga===id ? null : id;
-      renderAll();
-    });
-  });
-  document.querySelectorAll('[data-sort-col]').forEach(th=>{
-    th.addEventListener('click', ()=>{
-      const col = th.dataset.sortCol;
-      if(state.semValidadeSort.col===col) state.semValidadeSort.dir *= -1;
-      else state.semValidadeSort = { col, dir: 1 };
-      renderAll();
-    });
-  });
-  const semvalDep = document.getElementById('semval-dep-filter');
-  if(semvalDep) semvalDep.addEventListener('change', e=>{ state.semValidadeDep = e.target.value; renderAll(); });
-}
-
-/* ============ FILTER BAR EVENTS ============ */
-document.getElementById('f-search').addEventListener('input', e=>{ state.search = e.target.value.trim(); renderAll(); });
-document.getElementById('f-categoria').addEventListener('change', e=>{ state.categoria = e.target.value; renderAll(); });
-document.getElementById('f-from').addEventListener('change', e=>{ state.from = e.target.value || null; renderAll(); });
-document.getElementById('f-to').addEventListener('change', e=>{ state.to = e.target.value || null; renderAll(); });
-document.getElementById('btn-clear').addEventListener('click', ()=>{
-  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null;
-  document.getElementById('f-search').value='';
-  document.getElementById('f-categoria').value='';
-  document.getElementById('f-from').value='';
-  document.getElementById('f-to').value='';
-  renderAll();
-});
-
-/* ============ IMPORT / EXPORT ============ */
-document.getElementById('btn-import').addEventListener('click', ()=> document.getElementById('file-input').click());
-document.getElementById('file-input').addEventListener('change', async (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, {type:'array'});
-    const parsed = parseWorkbook(wb);
-    state.data = parsed;
-    state.addressFilter = null; state.openCarga = null;
-    populateCategoriaFilter();
-    renderAll();
-    toast(`Dados atualizados: ${parsed.estoque.length} posições · ${parsed.cargas.length} cargas`);
-  }catch(err){
-    console.error(err);
-    toast('Não foi possível ler essa planilha. Verifique o formato (abas "Estoque" e "Carga ...").');
-  }
-  e.target.value = '';
-});
-
-/* converte data de célula: Date, serial do Excel, ou texto (aceita dd/mm/aaaa,
-   dd/mm/aa e aaaa-mm-dd) — texto em formato brasileiro não é confundido. */
-function parseDateCell(v){
-  if(v==null||v==='') return null;
-  if(v instanceof Date) return v.toISOString().slice(0,10);
-  if(typeof v==='number'){ const d=XLSX.SSF.parse_date_code(v); return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:null; }
-  const s=String(v).trim();
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/); if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})\b/); if(m) return `20${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-  const p=new Date(s); return !isNaN(p)?p.toISOString().slice(0,10):null;
-}
-/* converte número de célula: aceita número direto, texto com vírgula decimal
-   (formato brasileiro, "90,08"), "R$ 90,08", milhar com ponto ("1.234,56") —
-   sem isso, Number() quebra silenciosamente e vira zero. */
-function parseNumberCell(v){
-  if(v==null || v==='') return 0;
-  if(typeof v === 'number') return v;
-  let s = String(v).trim().replace(/^r\$\s*/i,'');
-  if(/^-?\d{1,3}(\.\d{3})*,\d+$/.test(s)) s = s.replace(/\./g,'').replace(',','.');
-  else if(/^-?\d+,\d+$/.test(s)) s = s.replace(',','.');
-  else s = s.replace(/[^\d.\-]/g,'');
-  const n = parseFloat(s);
-  return isNaN(n) ? 0 : n;
-}
-/* lê a aba ENTRADA no formato "tabela única, uma linha por item": NF, DATA,
-   MOTORISTA e CARRO só vêm preenchidos na primeira linha de cada carga —
-   as linhas seguintes da mesma carga ficam em branco nesses campos
-   ("preenchimento por arrasto"). Reconstrói as cargas agrupando pelo NF. */
-/* acha automaticamente qual linha é o cabeçalho de colunas de verdade —
-   procura nas primeiras linhas por uma que contenha um dos rótulos
-   esperados. Resolve o vaivém de ter ou não uma linha de título antes
-   (ex.: "ENTRADA" sozinho numa linha) sem precisar fixar a posição. */
-function findHeaderRowIndex(rows, patterns, maxScan){
-  maxScan = maxScan || 4;
-  for(let i=0;i<Math.min(maxScan, rows.length);i++){
-    const row = rows[i]||[];
-    if(patterns.some(re=>row.some(cell=>re.test(String(cell||''))))) return i;
-  }
-  return 0;
-}
-function parseEntradaFlatSheet(rows){
-  // linha de cabeçalho detectada automaticamente — pode vir logo na linha 0
-  // ou ter uma linha de título ("ENTRADA") antes, os itens começam na linha
-  // seguinte ao cabeçalho, seja qual for.
-  if(rows.length<2) return [];
-  const headerIdx = findHeaderRowIndex(rows, [/^nf$/i, /cod.*sku/i]);
-  const header = rows[headerIdx]||[];
-  const findCol = (re) => header.findIndex(h => re.test(String(h||'')));
-  const idxNF = findCol(/^nf$/i);
-  const idxData = findCol(/^data:?$/i);
-  const idxMotorista = findCol(/motorista/i);
-  const idxCarro = findCol(/carro/i);
-  const idxSku = findCol(/cod.*sku|^sku$/i);
-  const idxDesc = findCol(/descri/i);
-  const idxVolume = findCol(/^volum/i);
-  const idxLote = findCol(/^lotes?$/i);
-  const idxValidade = findCol(/validade/i);
-  const idxQtdPrevista = findCol(/qtd\.?\s*cx.*prevista|^qtd\.?\s*cx$/i);
-  const idxQtdConferida = findCol(/qtd\s*conferida/i);
-  const idxEndereco = findCol(/endere[çc]o/i);
-  const idxDivergencia = findCol(/diverg/i);
-  const idxAvaria = findCol(/avaria/i);
-  const idxReembalar = findCol(/reembalar/i);
-  const idxQuarentena = findCol(/quarentena/i);
-  const idxObs = findCol(/^obs/i);
-  const idxTotalPaletes = findCol(/total.*paletes?/i);
-  const idxPaletesVazio = findCol(/paletes?\s*vazi/i);
-
-  // agrupa por NF de verdade (mapa), não por linhas vizinhas — o NF pode vir
-  // em branco por arrasto, repetido em toda linha, OU até intercalado com
-  // outras cargas (linhas de NFs diferentes de permeio); nenhum desses casos
-  // deve criar uma carga duplicada.
-  const porNf = new Map();
-  const ordemNf = [];
-  let ultimoNf = '';
-  for(let i=headerIdx+1;i<rows.length;i++){
-    const r = rows[i];
-    if(!r) continue;
-    const nfCell = idxNF>=0 ? r[idxNF] : null;
-    const nfStr = (nfCell!=null && String(nfCell).trim()!=='') ? String(nfCell).trim() : ultimoNf;
-    ultimoNf = nfStr; // sustenta por arrasto quando a linha não repetir o NF
-    const skuCell = idxSku>=0 ? r[idxSku] : null;
-    if(skuCell==null || skuCell==='') continue;
-    if(!porNf.has(nfStr)){
-      porNf.set(nfStr, {
-        nf: nfStr,
-        data: idxData>=0 ? parseDateCell(r[idxData]) : null,
-        motorista: idxMotorista>=0 ? String(r[idxMotorista]||'').trim() : '',
-        carro: idxCarro>=0 ? String(r[idxCarro]||'').trim() : '',
-        totalPaletes: idxTotalPaletes>=0 ? parseNumberCell(r[idxTotalPaletes]) : 0,
-        paletesVazio: idxPaletesVazio>=0 ? parseNumberCell(r[idxPaletesVazio]) : 0,
-        items: []
-      });
-      ordemNf.push(nfStr);
-    }
-    porNf.get(nfStr).items.push({
-      sku: Number(skuCell),
-      descricao: idxDesc>=0 ? String(r[idxDesc]||'').trim() : '',
-      categoria: 'SEM CATEGORIA',
-      volume: idxVolume>=0 ? String(r[idxVolume]||'').trim() : '',
-      marca: '',
-      qtdCx: idxQtdPrevista>=0 ? parseNumberCell(r[idxQtdPrevista]) : 0,
-      lote: idxLote>=0 ? r[idxLote] : null,
-      validade: idxValidade>=0 ? parseDateCell(r[idxValidade]) : null,
-      qtdConferida: idxQtdConferida>=0 ? parseNumberCell(r[idxQtdConferida]) : 0,
-      endereco: idxEndereco>=0 ? r[idxEndereco] : null,
-      divergencia: idxDivergencia>=0 ? parseNumberCell(r[idxDivergencia]) : 0,
-      avariaDescarte: idxAvaria>=0 ? parseNumberCell(r[idxAvaria]) : 0,
-      reembalar: idxReembalar>=0 ? parseNumberCell(r[idxReembalar]) : 0,
-      naoVeio: 0, quarentena: idxQuarentena>=0 ? parseNumberCell(r[idxQuarentena]) : 0,
-      obs: idxObs>=0 ? (r[idxObs]||null) : null,
-    });
-  }
-  return ordemNf.map(nf=>porNf.get(nf));
-}
-/* SAIDA segue o mesmo espírito das antigas abas de Carga: título (linha 0),
-   metadados da transação (linha 1 — Ordem de Frete/Carro/Motorista/Data/
-   Peso total OF/Valor total OF), cabeçalho de colunas (linha 2), itens
-   (linha 3+). Cada aba cujo nome contém "saida" é UMA transação — se um dia
-   ele tiver mais de uma, é só ter mais de uma aba (ex.: "SAIDA 2"). Guardado
-   pra referência/histórico — o estoque atual continua vindo direto da aba
-   Estoque, não é recalculado a partir da Saída.
-   Aceita metadados por rótulo (não por posição fixa), igual o resto. */
-/* SAIDA agora é uma tabela única, no mesmo espírito da ENTRADA: uma linha
-   por item, com ORDEM DE FRETE/CARRO/MOTORISTA/DATA/QTD PALETE/Peso e Valor
-   total OF preenchidos por arrasto só na primeira linha de cada saída.
-   Reconstrói as saídas agrupando pela Ordem de Frete. Diferente da Entrada,
-   aqui não tem linha de título antes do cabeçalho — a linha 0 já é o
-   cabeçalho de colunas. */
-function parseSaidaFlatSheet(rows){
-  if(rows.length<2) return [];
-  const headerIdx = findHeaderRowIndex(rows, [/ordem\s*de\s*frete/i, /doc\.?\s*venda/i]);
-  const header = rows[headerIdx]||[];
-  const findCol = (re) => header.findIndex(h => re.test(String(h||'')));
-  const idxOF = findCol(/ordem\s*de\s*frete/i);
-  const idxCarro = findCol(/^carro$/i);
-  const idxMotorista = findCol(/motorista/i);
-  const idxData = findCol(/^data$/i);
-  const idxQtdPalete = findCol(/qtd\s*palete/i);
-  const idxDocVenda = findCol(/doc\.?\s*venda/i);
-  const idxCliente = findCol(/^cliente$/i);
-  const idxRazao = findCol(/raz[aã]o\s*social/i);
-  const idxCidade = findCol(/^cidade$/i);
-  const idxBairro = findCol(/^bairro$/i);
-  const idxSku = findCol(/cod.*sku|^sku$/i);
-  const idxDesc = findCol(/descri/i);
-  const idxQtd = findCol(/qtd\.?\s*cx/i);
-  const idxLote = findCol(/^lotes?$/i);
-  const idxPeso = findCol(/^peso/i);
-  const idxPreco = findCol(/pre[çc]o.*(unit|l[ií]q)/i);
-  const idxImposto = findCol(/montante.*imposto|imposto/i);
-  const idxValorTotal = findCol(/pre[çc]o.*total|val\.?\s*l[ií]q/i);
-  const idxEndereco = findCol(/endere[çc]o/i);
-  const idxRemessa = findCol(/remessa/i);
-  const idxPesoTotalOF = findCol(/peso\s*total\s*(da\s*|do\s*)?of/i);
-  const idxValorTotalOF = findCol(/valor\s*total\s*(da\s*|do\s*)?of/i);
-
-  const porOf = new Map();
-  const ordemOf = [];
-  let ultimoOf = '';
-  for(let i=headerIdx+1;i<rows.length;i++){
-    const r = rows[i];
-    if(!r) continue;
-    const ofCell = idxOF>=0 ? r[idxOF] : null;
-    const ofStr = (ofCell!=null && String(ofCell).trim()!=='') ? String(ofCell).trim() : ultimoOf;
-    ultimoOf = ofStr;
-    const skuCell = idxSku>=0 ? r[idxSku] : null;
-    if(skuCell==null || skuCell==='') continue;
-    if(!porOf.has(ofStr)){
-      porOf.set(ofStr, {
-        ordemFrete: ofStr,
-        carro: idxCarro>=0 ? String(r[idxCarro]||'').trim() : '',
-        motorista: idxMotorista>=0 ? String(r[idxMotorista]||'').trim() : '',
-        data: idxData>=0 ? parseDateCell(r[idxData]) : null,
-        qtdPalete: idxQtdPalete>=0 ? parseNumberCell(r[idxQtdPalete]) : 0,
-        pesoTotalOF: idxPesoTotalOF>=0 ? parseNumberCell(r[idxPesoTotalOF]) : 0,
-        valorTotalOF: idxValorTotalOF>=0 ? parseNumberCell(r[idxValorTotalOF]) : 0,
-        items: []
-      });
-      ordemOf.push(ofStr);
-    }
-    const atual = porOf.get(ofStr);
-    // Peso/Valor total OF podem vir repetidos em toda linha da saída (não só
-    // na primeira) — se ainda não temos o valor, aproveita o que aparecer.
-    if(!atual.pesoTotalOF && idxPesoTotalOF>=0) atual.pesoTotalOF = parseNumberCell(r[idxPesoTotalOF]);
-    if(!atual.valorTotalOF && idxValorTotalOF>=0) atual.valorTotalOF = parseNumberCell(r[idxValorTotalOF]);
-    atual.items.push({
-      sku: Number(skuCell),
-      descricao: idxDesc>=0 ? String(r[idxDesc]||'').trim() : '',
-      docVenda: idxDocVenda>=0 ? r[idxDocVenda] : null,
-      cliente: idxCliente>=0 ? String(r[idxCliente]||'').trim() : '',
-      razaoSocial: idxRazao>=0 ? String(r[idxRazao]||'').trim() : '',
-      cidade: idxCidade>=0 ? String(r[idxCidade]||'').trim() : '',
-      bairro: idxBairro>=0 ? String(r[idxBairro]||'').trim() : '',
-      qtd: idxQtd>=0 ? parseNumberCell(r[idxQtd]) : 0,
-      lote: idxLote>=0 ? r[idxLote] : null,
-      pesoBruto: idxPeso>=0 ? parseNumberCell(r[idxPeso]) : 0,
-      precoUnitario: idxPreco>=0 ? parseNumberCell(r[idxPreco]) : 0,
-      montanteImposto: idxImposto>=0 ? parseNumberCell(r[idxImposto]) : 0,
-      valorTotal: idxValorTotal>=0 ? parseNumberCell(r[idxValorTotal]) : 0,
-      endereco: idxEndereco>=0 ? r[idxEndereco] : null,
-      remessa: idxRemessa>=0 ? r[idxRemessa] : null,
-    });
-  }
-  return ordemOf.map(of=>porOf.get(of));
-}
-function parseWorkbook(wb){
-  const out = {estoque:[], cargas:[], saidas:[], enderecosVazios:[], paletesResumo: JSON.parse(JSON.stringify(state.data.paletesResumo))};
-  const MESES = ['','JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-
-  // aceita "Estoque" e também "Etoque" (falta o S) e variações parecidas —
-  // procurando só pelo miolo "toque", que está presente nos dois jeitos.
-  const estoqueSheetName = wb.SheetNames.find(n=>/to+que/i.test(n));
-  if(estoqueSheetName){
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[estoqueSheetName], {header:1, raw:true});
-    const headerRow0 = rows[0]||[];
-    const findColE = (re) => headerRow0.findIndex(h => re.test(String(h||'')));
-    const idxSku = findColE(/cod.*sku|^sku$/i);
-    const idxDesc = findColE(/descri/i);
-    const idxVolume = findColE(/^volum/i);
-    const idxLote = findColE(/lotes?/i);
-    const idxValidade = findColE(/validade/i);
-    const idxQtd = findColE(/qtd\.?\s*cx/i);
-    const idxLocal = findColE(/localidade|endere[çc]o/i);
-    const idxDep = findColE(/^deposito/i);
-    const idxCategoria = findColE(/categoria/i);
-    const idxMarca = findColE(/^marca/i);
-    for(let i=1;i<rows.length;i++){
-      const r = rows[i];
-      if(!r) continue;
-      const enderecoRaw = idxLocal>=0 ? r[idxLocal] : null;
-      const skuCell = idxSku>=0 ? r[idxSku] : r[0];
-      if(skuCell==null || skuCell===''){
-        if(enderecoRaw!=null && String(enderecoRaw).trim()!==''){
-          out.enderecosVazios.push(String(enderecoRaw).trim());
-        }
-        continue;
+function buildSkuIndex(){
+  const idx = new Map();
+  state.pedidos.forEach(p=>{
+    p.items.forEach(it=>{
+      if(!idx.has(it.material)){
+        idx.set(it.material, {material: it.material, denom: it.denom, estoque: it.estoque, ocorrencias: []});
       }
-      out.estoque.push({
-        sku: Number(skuCell),
-        descricao: idxDesc>=0 ? String(r[idxDesc]||'').trim() : '',
-        // esse formato novo não tem coluna de categoria nem de marca —
-        // preenche com um padrão em vez de ler a coluna errada por engano.
-        categoria: idxCategoria>=0 ? String(r[idxCategoria]||'SEM CATEGORIA').trim() : 'SEM CATEGORIA',
-        volume: idxVolume>=0 ? String(r[idxVolume]||'').trim() : '',
-        marca: idxMarca>=0 ? r[idxMarca] : '',
-        lote: idxLote>=0 ? r[idxLote] : null,
-        validade: idxValidade>=0 ? parseDateCell(r[idxValidade]) : null,
-        qtdCx: idxQtd>=0 ? parseNumberCell(r[idxQtd]) : 0,
-        endereco: enderecoRaw,
-        deposito: idxDep>=0 ? r[idxDep] : null
-      });
-    }
-    let found = false;
-    for(let i=0;i<rows.length && !found;i++){
-      const r = rows[i]||[];
-      for(let c=0;c<r.length;c++){
-        if(String(r[c]||'').trim().toUpperCase()==='PALETES'){
-          const dataRow = rows[i+3]||[];
-          const emUso = parseNumberCell(dataRow[c]);
-          const vaziosBons = parseNumberCell(dataRow[c+1]);
-          const vaziosDanificados = parseNumberCell(dataRow[c+2]);
-          const total = parseNumberCell(dataRow[c+3]);
-          if(emUso || total){
-            out.paletesResumo = { emUso, vaziosBons, vaziosDanificados, total };
-            found = true;
-          }
-          break;
-        }
-      }
-    }
-  }
-
-  // formato antigo: uma aba por carga (título + metadados + itens) —
-  // mantido por compatibilidade, caso volte a aparecer.
-  const cargaSheets = wb.SheetNames.filter(n=>n.toLowerCase().includes('carga'));
-  cargaSheets.forEach(sname=>{
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sname], {header:1, raw:true});
-    if(rows.length<3) return;
-    const headerRow = rows[1]||[];
-    const colTitles = rows[2]||[];
-    const dateMatch = String(sname).match(/(\d{2})-(\d{2})-(\d{2})/);
-
-    const findCol = (re) => colTitles.findIndex(h => re.test(String(h||'')));
-    const idxAvaria = findCol(/avaria|descarte/i);
-    const idxReembalar = findCol(/reembalar/i);
-    const idxNaoVeio = findCol(/n[aã]o\s*veio|falt/i);
-    const idxQuarentena = findCol(/quarentena/i);
-    const idxObs = findCol(/^\s*obs/i);
-    const newFormat = idxAvaria>=0 && idxReembalar>=0;
-
-    const items = [];
-    for(let i=3;i<rows.length;i++){
-      const r = rows[i];
-      if(!r || r[0]==null || r[0]==='') continue;
-      let occ = {avariaDescarte:0, reembalar:0, naoVeio:0, quarentena:0, obs:null};
-      if(newFormat){
-        occ = {
-          avariaDescarte: parseNumberCell(r[idxAvaria]),
-          reembalar: parseNumberCell(r[idxReembalar]),
-          naoVeio: idxNaoVeio>=0 ? parseNumberCell(r[idxNaoVeio]) : 0,
-          quarentena: idxQuarentena>=0 ? parseNumberCell(r[idxQuarentena]) : 0,
-          obs: idxObs>=0 ? (r[idxObs]||null) : null,
-        };
-      } else {
-        [r[10], r[11]].filter(Boolean).forEach(raw=>{
-          const leg = legacyTextToFields(raw);
-          occ.avariaDescarte += leg.avariaDescarte; occ.reembalar += leg.reembalar;
-          occ.naoVeio += leg.naoVeio; occ.quarentena += leg.quarentena;
-          if(leg.obs) occ.obs = occ.obs ? occ.obs+' / '+leg.obs : leg.obs;
-        });
-      }
-      items.push({
-        sku:Number(r[0]), descricao:String(r[1]||'').trim(), categoria:String(r[2]||'SEM CATEGORIA').trim(),
-        volume:r[3]!=null?String(r[3]).trim():'', marca:r[4], qtdCx:parseNumberCell(r[5]), lote:r[6],
-        qtdConferida:parseNumberCell(r[7]), endereco:r[8], divergencia:parseNumberCell(r[9]), ...occ
-      });
-    }
-    let titulo = String(headerRow[1]||'').trim();
-    if(!titulo || /DATA DA CARGA/i.test(titulo) || !/CARGA/i.test(titulo)){
-      titulo = dateMatch ? `CARGA ${dateMatch[1]} ${MESES[parseInt(dateMatch[2],10)]||''} 20${dateMatch[3]}`.trim() : sname;
-    }
-    let motorista = String(headerRow[3]||'').replace(/MOTORISTA:\s*/i,'').trim();
-    if(/DATA DA CARGA/i.test(motorista)) motorista = '';
-    out.cargas.push({
-      id: dateMatch ? dateMatch[0] : sname,
-      data: dateMatch ? `20${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : new Date().toISOString().slice(0,10),
-      nf: String(headerRow[0]||'').replace(/NF:\s*/i,'').trim(),
-      titulo,
-      totalPaletesInformado: parseInt((String(headerRow[2]||'').match(/\d+/)||[0])[0],10)||0,
-      motorista,
-      veiculo: String(headerRow[6]||'').replace(/CAMINHAO:\s*|CARRO:\s*|VE[IÍ]CULO:\s*/i,'').trim(),
-      paletesVazios: parseInt((String(headerRow[8]||'').match(/\d+/)||[0])[0],10)||0,
-      items
+      idx.get(it.material).ocorrencias.push({doc: p.doc, cliente: p.cliente, qtd: it.qtd, qtdAlocada: it.qtdAlocada, atende: it.atende, parcial: it.parcial, valTotal: it.valTotal, valorCorte: it.valorCorte});
     });
   });
-
-  // formato novo: aba ENTRADA única, uma linha por item, NF repetido por
-  // arrasto — reconstrói as cargas agrupando pelo NF. Avaria/Reembalar/
-  // Quarentena aqui ficam só no histórico de conferência (pra aparecer nas
-  // abas Cargas/Divergência) — quem manda pro depósito físico é só a aba
-  // Estoque, a Entrada não cria posição de estoque sozinha.
-  const entradaSheetName = wb.SheetNames.find(n=>/^entrada$/i.test(n.trim()));
-  if(entradaSheetName){
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[entradaSheetName], {header:1, raw:true});
-    const cargasFlat = parseEntradaFlatSheet(rows);
-    cargasFlat.forEach((cf,idx)=>{
-      let titulo;
-      if(cf.data){ const [y,m,d]=cf.data.split('-'); titulo = `CARGA ${d} ${MESES[parseInt(m,10)]||''} ${y}`.trim(); }
-      else titulo = cf.nf ? `CARGA · NF ${cf.nf}` : `CARGA ${idx+1}`;
-      out.cargas.push({
-        id: cf.nf ? `NF-${cf.nf}` : `entrada-${idx+1}`,
-        data: cf.data || new Date().toISOString().slice(0,10),
-        nf: cf.nf,
-        titulo,
-        totalPaletesInformado: cf.totalPaletes,
-        motorista: cf.motorista,
-        veiculo: cf.carro,
-        paletesVazios: cf.paletesVazio,
-        items: cf.items
-      });
-    });
-  }
-
-  // formato novo: aba SAIDA única, tabela contínua com Ordem de Frete
-  // preenchida por arrasto — reconstrói as saídas agrupando por ela.
-  const saidaSheetName = wb.SheetNames.find(n=>/^saida$/i.test(n.trim()));
-  if(saidaSheetName){
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[saidaSheetName], {header:1, raw:true});
-    out.saidas = parseSaidaFlatSheet(rows).map((s,idx)=>({
-      id: s.ordemFrete ? `OF-${s.ordemFrete}` : `saida-${idx+1}`,
-      sheetName: saidaSheetName,
-      ...s
-    }));
-  }
-
-  const sapSheetName = wb.SheetNames.find(n=>n.toLowerCase().trim()==='sap' || n.toLowerCase().includes('sap'));
-  out.sap = [];
-  if(sapSheetName){
-    const rowsSap = XLSX.utils.sheet_to_json(wb.Sheets[sapSheetName], {header:1, raw:true});
-    const headerSap = rowsSap[0]||[];
-    const findColS = (re) => headerSap.findIndex(h => re.test(String(h||'')));
-    const idxSku = findColS(/produto|c[oó]digo|sku/i);
-    const idxDesc = findColS(/descri[çc][aã]o/i);
-    const idxLote = findColS(/lote/i);
-    const idxEndereco = findColS(/pd\s*origem|posi[çc][aã]o|endere[çc]o|localidade/i);
-    const idxQtd = findColS(/qtd|quantidade|dispon[ií]vel/i);
-    const idxVal = findColS(/vencimento|validade/i);
-    for(let i=1;i<rowsSap.length;i++){
-      const r = rowsSap[i];
-      if(!r || r[idxSku>=0?idxSku:0]==null || r[idxSku>=0?idxSku:0]==='') continue;
-      let validade = null;
-      const vraw = idxVal>=0 ? r[idxVal] : null;
-      if(vraw instanceof Date) validade = vraw.toISOString().slice(0,10);
-      else if(typeof vraw === 'number'){ const dd = XLSX.SSF.parse_date_code(vraw); if(dd) validade = `${dd.y}-${String(dd.m).padStart(2,'0')}-${String(dd.d).padStart(2,'0')}`; }
-      else if(vraw){ const p = new Date(vraw); if(!isNaN(p)) validade = p.toISOString().slice(0,10); }
-      out.sap.push({
-        sku: Number(String(r[idxSku>=0?idxSku:0]).trim()),
-        descricao: String((idxDesc>=0?r[idxDesc]:'')||'').trim(),
-        lote: (idxLote>=0 && r[idxLote]!=null) ? r[idxLote] : null,
-        endereco: idxEndereco>=0 ? (r[idxEndereco]!=null ? String(r[idxEndereco]).trim() : null) : null,
-        qtd: Number(idxQtd>=0 ? r[idxQtd] : 0)||0,
-        validade
-      });
-    }
-  } else {
-    out.sap = JSON.parse(JSON.stringify(state.data.sap||[]));
-  }
-  return out;
-}
-function legacyTextToFields(raw){
-  const res = {avariaDescarte:0, reembalar:0, naoVeio:0, quarentena:0, obs:null};
-  const t = String(raw).toLowerCase();
-  const m = t.match(/(\d+)/);
-  const qtd = m ? parseInt(m[1],10) : 0;
-  if(t.includes('reembalar')) res.reembalar = qtd;
-  else if(t.includes('descarte')) res.avariaDescarte = qtd;
-  else if(t.includes('não veio')||t.includes('nao veio')) res.naoVeio = qtd;
-  else if(t.includes('quarentena')) res.quarentena = qtd;
-  else if(!t.includes('ok')) res.obs = raw;
-  return res;
+  skuIndex = idx;
 }
 
-document.getElementById('btn-export').addEventListener('click', ()=>{
-  const wb = XLSX.utils.book_new();
-  const estHeader = ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUME','MARCA','LOTES','VALIDADE','QTD.CX','LOCALIDADE','DEPOSITO'];
-  const pr = state.data.paletesResumo;
-  const paletesData   = [pr.emUso,pr.vaziosBons,pr.vaziosDanificados,pr.total];
-  const estRows = [
-    estHeader.concat(['', 'PALETES']),
-    ...state.data.estoque.map((r,i)=>{
-      const row = [r.sku,r.descricao,r.categoria,r.volume,r.marca,r.lote,r.validade,r.qtdCx,r.endereco,r.deposito];
-      if(i===0) row.push('', 'Em Uso', 'Vazios', '', 'Total');
-      else if(i===1) row.push('', '', 'Bons', 'Danificados');
-      else if(i===2) row.push('', paletesData[0], paletesData[1], paletesData[2], paletesData[3]);
-      return row;
-    })
+function renderKPIs(){
+  const g = state.grand;
+  const pctCorteValor = g.valTotal? (1 - g.valorCorte/g.valTotal)*100 : 0;
+  const totalItens = state.pedidos.reduce((a,p)=>a+p.items.length,0);
+  const itensCorte = state.pedidos.reduce((a,p)=>a+p.items.filter(it=>!it.atende).length,0);
+
+  const totalCaixas = g.qtdCorte;
+  const bpp = computeBoxesPerPallet();
+  const paletesTotais = bpp ? Math.ceil(g.qtdCorte / bpp) : 0;
+
+  const kpis1 = [
+    {lbl:'Peso total', val: fmtKg(g.peso), sub: 'bruto pedido', cls:''},
+    {lbl:'Peso c/ corte', val: fmtKg(g.pesoCorte), sub: 'liberado p/ rota', cls:'accent-teal'},
+    {lbl:'Valor total', val: fmtBRL(g.valTotal), sub: 'sem imposto', cls:''},
+    {lbl:'Valor c/ corte', val: fmtBRL(g.valorCorte), sub: 'sem imposto', cls:'accent-teal'},
+    {lbl:'Paletes (carteira)', val: paletesTotais, sub: `${totalCaixas} caixas s/corte ÷ ${bpp||'—'}/palete — carga consolidada`, cls:'accent-navy'}
   ];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(estRows), 'Estoque');
+  const kpis2 = [
+    {lbl:'Total c/ imposto', val: fmtBRL(g.valTotal+g.imposto), sub: 'pedido cheio, sem corte', cls:'accent-navy'},
+    {lbl:'Total c/ corte + imposto', val: fmtBRL(g.valorCorte+g.impostoCorte), sub: 'base da verba de frete', cls:'accent-navy'},
+    {lbl:'Imposto total', val: fmtBRL(g.imposto), sub: fmtBRL(g.impostoCorte)+' com corte', cls:''},
+    {lbl:'% valor cortado', val: pctCorteValor.toFixed(1)+'%', sub: `${itensCorte} de ${totalItens} itens cortados`, cls:'accent-amber'}
+  ];
+  document.getElementById('kpi-strip').innerHTML = kpis1.map(kpiCard).join('');
+  document.getElementById('kpi-strip-2').innerHTML = kpis2.map(kpiCard).join('');
+}
+function kpiCard(k){
+  return `<div class="kpi ${k.cls}">
+      <div class="lbl">${k.lbl}</div>
+      <div class="val mono">${k.val}</div>
+      <div class="sub">${k.sub}</div>
+    </div>`;
+}
 
-  state.data.cargas.forEach(c=>{
-    const rows = [
-      ['FOLHA DE CONFERÊNCIA DE ENTRADA'],
-      [`NF: ${c.nf}`, c.titulo, `TOTAL ${c.totalPaletesInformado} PALETES`, `MOTORISTA: ${c.motorista}`, '', '', `VEÍCULO: ${c.veiculo}`, '', `PALETES VAZIOS: ${c.paletesVazios}`],
-      ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUM.','MARCA','QTD.CX','LOTE','QTD CONFERIDA','ENDEREÇO','DIVERGENCIA','AVARIA','REEMBALAR','OBS'],
-      ...c.items.map(it=>[it.sku,it.descricao,it.categoria,it.volume,it.marca,it.qtdCx,it.lote,it.qtdConferida,it.endereco,it.divergencia,it.avariaDescarte||'',it.reembalar||'',it.obs]),
-    ];
-    const totalCx = c.items.reduce((s,it)=>s+(it.qtdCx||0),0);
-    const totalConf = c.items.reduce((s,it)=>s+(it.qtdConferida||0),0);
-    rows.push([null,null,null,null,null,totalCx,null,totalConf,null,totalConf-totalCx]);
-    const sheetName = `Carga ${c.id}`.slice(0,31);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), sheetName);
+function renderTable(){
+  const search = norm(document.getElementById('search').value);
+  const onlyCut = document.getElementById('only-cut').checked;
+  let rows = '';
+  state.pedidos.forEach(p=>{
+    const hasCut = p.items.some(it=>!it.atende);
+    if(onlyCut && !hasCut) return;
+    const matches = search === '' || norm(p.cliente).includes(search) || p.items.some(it=>norm(it.material).includes(search)||norm(it.denom).includes(search));
+    if(!matches) return;
+
+    p.items.forEach(it=>{
+      rows += `<tr class="item ${rowClass(it)}" data-doc="${p.doc}">
+        <td class="mono">${it.doc}</td>
+        <td title="${(it.cliente||'').toString().replace(/"/g,'&quot;')}">${it.cliente||''}</td>
+        <td class="mono">${it.material}</td>
+        <td title="${(it.denom||'').toString().replace(/"/g,'&quot;')}">${it.denom||''}</td>
+        <td class="num mono">${it.qtd}</td>
+        <td class="num mono">${fmtBRL(it.valTotal)}</td>
+        <td class="num mono">${it.peso.toFixed(3)}</td>
+        <td class="num mono">${it.estoque}</td>
+        <td class="num mono" style="${it.falta>0?'color:#B7541A; font-weight:700;':''}">${it.falta>0? it.falta.toFixed(1).replace(/\.0$/,'') : '—'}</td>
+      </tr>`;
+    });
+    rows += `<tr class="subtotal" data-doc="${p.doc}">
+      <td colspan="4">Subtotal — ${p.doc} <span class="open-hint">ver detalhes →</span></td>
+      <td class="num mono">${p.sub.qtd}${p.sub.qtdCorte<p.sub.qtd-1e-9? `<span class="corte-sub">${p.sub.qtdCorte.toFixed(1).replace(/\.0$/,'')} s/corte</span>`:''}</td>
+      <td class="num mono">${fmtBRL(p.sub.valTotal)}</td>
+      <td class="num mono">${p.sub.peso.toFixed(3)}</td>
+      <td></td>
+      <td class="num mono">${(p.sub.qtd-p.sub.qtdCorte)>1e-9? (p.sub.qtd-p.sub.qtdCorte).toFixed(1).replace(/\.0$/,'') : '—'}</td>
+    </tr>`;
   });
+  const g = state.grand;
+  rows += `<tr class="grandtotal">
+    <td colspan="4">TOTAL GERAL</td>
+    <td class="num mono">${g.qtd}${g.qtdCorte<g.qtd-1e-9? `<span class="corte-sub">${g.qtdCorte.toFixed(1).replace(/\.0$/,'')} s/corte</span>`:''}</td>
+    <td class="num mono">${fmtBRL(g.valTotal)}</td>
+    <td class="num mono">${g.peso.toFixed(3)}</td>
+    <td></td>
+    <td class="num mono">${(g.qtd-g.qtdCorte)>1e-9? (g.qtd-g.qtdCorte).toFixed(1).replace(/\.0$/,'') : '—'}</td>
+  </tr>`;
+  document.getElementById('grid-body').innerHTML = rows;
+  document.getElementById('table-hint').textContent = `${state.pedidos.length} pedidos · itens agrupados, corte de estoque aplicado`;
+}
 
-  if((state.data.sap||[]).length){
-    const sapRows = [
-      ['Produto','Descrição breve do produto','Lote','Qtd.disponível','Data do vencimento'],
-      ...state.data.sap.map(r=>[r.sku, r.descricao, r.lote, r.qtd, r.validade])
-    ];
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sapRows), 'SAP');
+function renderGauge(){
+  const g = state.grand;
+  const ok = g.valorCorte, cut = g.valTotal - g.valorCorte;
+  const total = g.valTotal || 1;
+  const pctOk = (ok/total)*100, pctCut = (cut/total)*100;
+  document.getElementById('gauge-fill').style.width = pctOk+'%';
+  document.getElementById('gauge-cut').style.width = pctCut+'%';
+  document.getElementById('gauge-fill-label').textContent = pctOk>12? pctOk.toFixed(0)+'%':'';
+  document.getElementById('leg-ok').textContent = fmtBRL(ok);
+  document.getElementById('leg-cut').textContent = fmtBRL(cut);
+}
+
+function renderTransport(){
+  const f = computeFreight();
+  document.getElementById('transp-name').textContent = f.chosen;
+  document.getElementById('transp-cost').innerHTML =
+    `custo ref.: ${fmtBRL(f.chosenCost)} · carga ${fmtKg(f.pesoCorte)} / capac. ${fmtKg(f.chosenCap)}`
+    + (f.note ? `<br><span style="color:var(--amber-500); font-weight:600;">⚠ ${f.note}</span>` : '');
+  document.getElementById('verba-val').textContent = fmtBRL(f.verba);
+  document.getElementById('total-corte-imposto').textContent = fmtBRL(f.totalComCorteEImposto);
+}
+
+function renderPedidosList(){
+  const rows = state.pedidos.map(p=>{
+    const pct = p.sub.valTotal? (1 - p.sub.valorCorte/p.sub.valTotal)*100 : 0;
+    const cls = pct>0.05 ? 'high' : 'zero';
+    const fracao = fracaoPaleteDe(p.sub.qtdCorte);
+    return `<div class="pedido-row">
+      <div><span class="doc">${p.doc}</span><span class="cli">${(p.cliente||'').toString().slice(0,22)}</span></div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span class="mono" style="font-size:11px; color:var(--ink-400);">${fracao.toFixed(2)} plt</span>
+        <span class="pct ${cls}">${pct.toFixed(0)}% corte</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('pedidos-list').innerHTML = rows;
+}
+
+['search'].forEach(id=>document.getElementById(id).addEventListener('input', renderTable));
+document.getElementById('only-cut').addEventListener('change', renderTable);
+['rate-vuc','rate-34','rate-toco','rate-truck','rate-pct','cap-vuc','cap-34','cap-toco','cap-truck'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderTransport);
+});
+['pallet-l','pallet-w','box-l','box-w','box-h','pallet-layers','box-maxkg'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{ renderPalletInfo(); if(state){ renderKPIs(); renderPedidosList(); } });
+});
+
+// ---------- Modal de detalhes do pedido ----------
+document.getElementById('grid-body').addEventListener('click', e=>{
+  const row = e.target.closest('tr[data-doc]');
+  if(!row) return;
+  openPedidoModal(row.dataset.doc);
+});
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-backdrop').addEventListener('click', e=>{
+  if(e.target.id === 'modal-backdrop') closeModal();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+function closeModal(){ document.getElementById('modal-backdrop').hidden = true; }
+
+function openPedidoModal(doc){
+  const p = state.pedidos.find(x=>x.doc===doc);
+  if(!p) return;
+
+  document.getElementById('modal-doc').textContent = 'Pedido ' + p.doc;
+  document.getElementById('modal-cliente').textContent = p.cliente || '—';
+
+  const itensCorte = p.items.filter(it=>!it.atende).length;
+  const pctCorte = p.sub.valTotal? (1 - p.sub.valorCorte/p.sub.valTotal)*100 : 0;
+
+  const fracaoPedido = fracaoPaleteDe(p.sub.qtdCorte);
+  const bppModal = computeBoxesPerPallet();
+
+  const kpis = [
+    {l:'Qtd. total', v: p.sub.qtd},
+    {l:'Peso total', v: fmtKg(p.sub.peso)},
+    {l:'Valor total', v: fmtBRL(p.sub.valTotal)},
+    {l:'Total c/ imposto', v: fmtBRL(p.sub.valTotal+p.sub.imposto)},
+    {l:'Peso c/ corte', v: fmtKg(p.sub.pesoCorte)},
+    {l:'Valor c/ corte', v: fmtBRL(p.sub.valorCorte)},
+    {l:'Total c/ corte+imp.', v: fmtBRL(p.sub.valorCorte+p.sub.impostoCorte)},
+    {l:'Itens cortados', v: `${itensCorte} de ${p.items.length} (${pctCorte.toFixed(0)}%)`},
+    {l:'Participação na carga', v: `${fracaoPedido.toFixed(2)} palete (${p.sub.qtdCorte} cx s/corte, ${bppModal||'—'}/plt)`}
+  ];
+  document.getElementById('modal-kpis').innerHTML = kpis.map(k=>`
+    <div class="mk"><div class="l">${k.l}</div><div class="v">${k.v}</div></div>`).join('');
+
+  document.getElementById('modal-items').innerHTML = p.items.map(it=>`
+    <tr class="${rowClass(it)}">
+      <td class="mono">${it.material}</td>
+      <td>${it.denom||''}</td>
+      <td class="num mono">${it.qtd}</td>
+      <td class="num mono">${it.estoque}</td>
+      <td>${situacaoBadge(it)}</td>
+      <td class="num mono">${it.peso.toFixed(3)}</td>
+      <td class="num mono">${fmtBRL(it.valTotal)}</td>
+      <td class="num mono">${fmtBRL(it.imposto)}</td>
+    </tr>`).join('');
+
+  document.getElementById('modal-backdrop').hidden = false;
+}
+
+// ---------- Persistência local (frete + paletização) ----------
+const CONFIG_FIELDS = ['rate-vuc','rate-34','rate-toco','rate-truck','rate-pct',
+  'cap-vuc','cap-34','cap-toco','cap-truck',
+  'pallet-l','pallet-w','box-l','box-w','box-h','pallet-layers','box-maxkg',
+  'ff-km','ff-veiculo','ff-dias','ff-preco-litro','ff-pedagio','ff-hospjanta','ff-motorista','ff-ajudante'];
+const CONFIG_KEY = 'roteirizacao_config_v1';
+
+function saveConfig(){
+  try{
+    const cfg = {};
+    CONFIG_FIELDS.forEach(id=>{ cfg[id] = document.getElementById(id).value; });
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+  }catch(e){ /* localStorage indisponível neste ambiente — segue sem salvar */ }
+}
+function loadConfig(){
+  try{
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if(!raw) return;
+    const cfg = JSON.parse(raw);
+    CONFIG_FIELDS.forEach(id=>{
+      if(cfg[id]!=null && document.getElementById(id)) document.getElementById(id).value = cfg[id];
+    });
+  }catch(e){ /* localStorage indisponível ou dado corrompido — segue com os padrões */ }
+}
+CONFIG_FIELDS.forEach(id=>{
+  document.getElementById(id).addEventListener('input', saveConfig);
+});
+loadConfig();
+
+// ---------- Exportar Excel ----------
+document.getElementById('export-btn').addEventListener('click', exportExcel);
+
+function exportExcel(){
+  if(!state){ alert('Importe as planilhas de Pedido e Estoque primeiro.'); return; }
+
+  const detalhado = [['Doc.venda','Cliente','Material','Denominação','Qtd','Estoque','Falta','Situação',
+    'Preço Unit.','Valor Item','Imposto Item','Val.+Imp. Item','Peso',
+    'Peso c/Corte','Valor c/Corte','Imposto c/Corte','Val.+Imp. c/Corte']];
+
+  state.pedidos.forEach(p=>{
+    p.items.forEach(it=>{
+      detalhado.push([
+        it.doc, it.cliente||'', it.material, it.denom||'', it.qtd, it.estoque,
+        it.falta, situacaoTexto(it),
+        it.precoUnit, it.valTotal, it.imposto, it.valTotal+it.imposto, it.peso,
+        it.pesoCorte, it.valorCorte, it.impostoCorte, it.valorCorte+it.impostoCorte
+      ]);
+    });
+    detalhado.push([`Subtotal ${p.doc}`,'','','',p.sub.qtd,'','','', '',
+      p.sub.valTotal, p.sub.imposto, p.sub.valTotal+p.sub.imposto, p.sub.peso,
+      p.sub.pesoCorte, p.sub.valorCorte, p.sub.impostoCorte, p.sub.valorCorte+p.sub.impostoCorte]);
+  });
+  const g = state.grand;
+  detalhado.push(['TOTAL GERAL','','','',g.qtd,'','','', '',
+    g.valTotal, g.imposto, g.valTotal+g.imposto, g.peso,
+    g.pesoCorte, g.valorCorte, g.impostoCorte, g.valorCorte+g.impostoCorte]);
+
+  const f = computeFreight();
+  const bpp = computeBoxesPerPallet();
+  const paletes = bpp ? Math.ceil(g.qtdCorte/bpp) : 0;
+
+  const resumo = [
+    ['Métrica','Valor'],
+    ['Pedidos', state.pedidos.length],
+    ['Qtd. total (caixas)', g.qtd],
+    ['Peso total (kg)', g.peso],
+    ['Peso c/ corte (kg)', g.pesoCorte],
+    ['Valor total (R$)', g.valTotal],
+    ['Valor c/ corte (R$)', g.valorCorte],
+    ['Imposto total (R$)', g.imposto],
+    ['Total c/ imposto, sem corte (R$)', g.valTotal+g.imposto],
+    ['Total c/ corte + imposto (R$)', g.valorCorte+g.impostoCorte],
+    ['Verba liberada frete (R$)', f.verba],
+    ['Transporte sugerido', f.chosen],
+    ['Caixas por palete', bpp],
+    ['Paletes (carteira, consolidado)', paletes],
+    ['Exportado em', new Date().toLocaleString('pt-BR')]
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detalhado), 'Detalhado');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumo), 'Resumo');
+  const ts = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `roteirizacao_${ts}.xlsx`);
+}
+
+
+renderPalletInfo();
+renderFreteFrota();
+
+// ---------- Consulta por SKU ----------
+document.getElementById('sku-search').addEventListener('input', renderSkuSearch);
+
+function renderSkuSearch(){
+  const box = document.getElementById('sku-result');
+  const q = norm(document.getElementById('sku-search').value);
+  if(!q){ box.style.display='none'; box.innerHTML=''; return; }
+
+  const matches = Array.from(skuIndex.values()).filter(s=>
+    norm(s.material).includes(q) || norm(s.denom).includes(q)
+  );
+
+  box.style.display = 'block';
+
+  if(matches.length === 0){
+    box.innerHTML = `<div class="hint">Nenhum material encontrado pra "${document.getElementById('sku-search').value}".</div>`;
+    return;
+  }
+  if(matches.length > 1){
+    box.innerHTML = `<div class="hint" style="margin-bottom:8px;">${matches.length} materiais encontrados — clique pra ver o resumo:</div>
+      <div class="sku-multi">${matches.map(m=>`
+        <div class="sku-multi-item" data-sku="${m.material.replace(/"/g,'&quot;')}">
+          <span><span class="code">${m.material}</span> — ${m.denom||''}</span>
+          <span>${m.ocorrencias.length} pedido(s)</span>
+        </div>`).join('')}</div>`;
+    box.querySelectorAll('.sku-multi-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        document.getElementById('sku-search').value = el.dataset.sku;
+        renderSkuSearch();
+      });
+    });
+    return;
   }
 
-  XLSX.writeFile(wb, 'Estoque_BH_export.xlsx');
-  toast('Planilha exportada com sucesso.');
-});
+  const s = matches[0];
+  const totalPedido = s.ocorrencias.reduce((a,o)=>a+o.qtd,0);
+  const totalCorte = s.ocorrencias.filter(o=>!o.atende).reduce((a,o)=>a+o.qtd,0);
+  const totalValor = s.ocorrencias.reduce((a,o)=>a+o.valTotal,0);
+  const falta = Math.max(0, totalPedido - s.estoque);
+  const nPedidosCorte = s.ocorrencias.filter(o=>!o.atende).length;
 
-document.getElementById('btn-reset').addEventListener('click', ()=>{
-  state.data = JSON.parse(JSON.stringify(ORIGINAL));
-  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null; state.openCarga=null;
-  document.getElementById('f-search').value='';
-  document.getElementById('f-categoria').value='';
-  document.getElementById('f-from').value='';
-  document.getElementById('f-to').value='';
-  populateCategoriaFilter();
-  renderAll();
-  toast('Dados originais da planilha restaurados.');
-});
-
-/* ============ INIT ============ */
-populateCategoriaFilter();
-renderAll();
-
+  box.innerHTML = `
+    <div class="sku-summary-head">
+      <div>
+        <div class="code">${s.material}</div>
+        <h4>${s.denom||'—'}</h4>
+      </div>
+    </div>
+    <div class="sku-kpis">
+      <div class="mk"><div class="l">Estoque disponível</div><div class="v">${s.estoque}</div></div>
+      <div class="mk"><div class="l">Total pedido (todos os pedidos)</div><div class="v">${totalPedido}</div></div>
+      <div class="mk"><div class="l">Faltante</div><div class="v" style="color:${falta>0?'var(--amber-500)':'inherit'}">${falta}</div></div>
+      <div class="mk"><div class="l">Valor total envolvido</div><div class="v">${fmtBRL(totalValor)}</div></div>
+    </div>
+    <table class="sku-table">
+      <thead><tr><th>Doc.venda</th><th>Cliente</th><th style="text-align:right;">Qtd pedida</th><th style="text-align:right;">Qtd alocada</th><th>Situação</th><th style="text-align:right;">Valor</th></tr></thead>
+      <tbody>
+        ${s.ocorrencias.map(o=>`
+          <tr class="${rowClass(o)}" style="cursor:pointer;" data-doc="${o.doc}">
+            <td class="mono">${o.doc}</td>
+            <td>${o.cliente||''}</td>
+            <td class="num mono">${o.qtd}</td>
+            <td class="num mono">${o.qtdAlocada.toFixed(1).replace(/\.0$/,'')}</td>
+            <td>${situacaoBadge(o)}</td>
+            <td class="num mono">${fmtBRL(o.valorCorte)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="hint" style="margin-top:8px;">Presente em ${s.ocorrencias.length} pedido(s), com corte/parcial em ${nPedidosCorte}. Clique numa linha pra abrir os detalhes do pedido.</div>
+  `;
+  box.querySelectorAll('tr[data-doc]').forEach(row=>{
+    row.addEventListener('click', ()=>openPedidoModal(row.dataset.doc));
+  });
+}
 </script>
 </body>
 </html>
