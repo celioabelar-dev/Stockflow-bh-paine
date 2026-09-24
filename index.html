@@ -375,6 +375,10 @@ footer{text-align:center;color:var(--ink-faint);font-size:11.5px;padding:30px 0 
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Exportar Excel
     </button>
+    <button class="btn btn-ghost" id="btn-export-analise" title="Planilha com itens a vencer, risco de ruptura (giro alto/estoque baixo) e giro completo de todos os SKUs (alto, baixo e sem giro)">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18M7 15l4-6 3 3 5-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Exportar Análise
+    </button>
     <button class="btn btn-ghost" id="btn-reset" title="Restaurar dados originais da planilha">
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Dados originais
@@ -396,10 +400,6 @@ footer{text-align:center;color:var(--ink-faint);font-size:11.5px;padding:30px 0 
     <div class="field grow">
       <label for="f-search">Buscar SKU, descrição ou endereço</label>
       <input type="text" id="f-search" placeholder="Ex.: 3000001193, amaciante, A12...">
-    </div>
-    <div class="field">
-      <label for="f-categoria">Categoria</label>
-      <select id="f-categoria"><option value="">Todas as categorias</option></select>
     </div>
     <button class="icon-btn" id="btn-clear" title="Limpar filtros">
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 1 2.6 6.36M3 12V6m0 6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -453,7 +453,6 @@ const state = {
   data: JSON.parse(JSON.stringify(ORIGINAL)),
   tab: 'geral',
   search: '',
-  categoria: '',
   from: null,
   to: null,
   addressFilter: null,
@@ -498,8 +497,7 @@ function matchesSearch(row){
          (row.endereco||'').toLowerCase().includes(q);
 }
 function matchesCategoria(row){
-  if(!state.categoria) return true;
-  return normCat(row.categoria) === state.categoria;
+  return true; // categoria removida — não é mais usada como filtro
 }
 function inPeriod(dateStr){
   if(!dateStr) return true;
@@ -618,11 +616,12 @@ function computeABC(rows, key){
 function aggregateSaidaPorSku(){
   const map = {};
   allSaidaItems().forEach(it=>{
-    if(!map[it.sku]) map[it.sku] = {sku:it.sku, descricao:it.descricao, valor:0, qtd:0};
+    if(!map[it.sku]) map[it.sku] = {sku:it.sku, descricao:it.descricao, valor:0, qtd:0, pedidos:new Set()};
     map[it.sku].valor += it.valorTotal||0;
     map[it.sku].qtd += it.qtd||0;
+    map[it.sku].pedidos.add(it.docVenda!=null ? it.docVenda : it.ordemFrete);
   });
-  return Object.values(map);
+  return Object.values(map).map(s=>({...s, numPedidos:s.pedidos.size}));
 }
 function aggregateSaidaPorCliente(){
   const map = {};
@@ -647,11 +646,20 @@ function aggregateSaidaPorRegiao(field){
   });
   return Object.values(map).map(r=>({...r, numClientes:r.clientes.size})).sort((a,b)=>b.valor-a.valor);
 }
+function aggregateSaidaPorPedido(){
+  const map = {};
+  allSaidaItems().forEach(it=>{
+    const key = it.docVenda!=null && it.docVenda!=='' ? String(it.docVenda) : (it.ordemFrete||'SEM PEDIDO');
+    if(!map[key]) map[key] = {pedido:key, qtd:0, valor:0};
+    map[key].qtd += it.qtd||0;
+    map[key].valor += it.valorTotal||0;
+  });
+  return Object.values(map).sort((a,b)=>b.valor-a.valor);
+}
 function renderComercialTab(){
   const items = allSaidaItems();
-  const metrica = state.comercialMetrica;
-  const key = metrica==='valor' ? 'valor' : 'qtd';
-  const fmt = metrica==='valor' ? fmtMoney : fmtInt;
+  const key = 'valor';
+  const fmt = fmtMoney;
 
   if(!items.length){
     return `
@@ -667,7 +675,6 @@ function renderComercialTab(){
   const cidadesDistintas = new Set(items.map(it=>(it.cidade||'').trim()).filter(Boolean)).size;
 
   const porSku = computeABC(aggregateSaidaPorSku(), key);
-  const top15 = porSku.slice(0,15).map(r=>({label:`${r.sku} · ${(r.descricao||'').slice(0,28)}`, value:r[key], color: r.classe==='A'?'var(--ok)':(r.classe==='B'?'var(--reembalar)':'var(--descarte)')}));
 
   const porCliente = aggregateSaidaPorCliente();
   const porCidade = aggregateSaidaPorRegiao('cidade');
@@ -710,6 +717,14 @@ function renderComercialTab(){
       <td class="num">${fmtMoney(r.valor)}</td>
     </tr>`).join('') || `<tr class="empty-row"><td colspan="4">Nenhum bairro encontrado.</td></tr>`;
 
+  const porPedido = aggregateSaidaPorPedido();
+  const pedidoRows = porPedido.map(p=>`
+    <tr>
+      <td class="mono">${esc(p.pedido)}</td>
+      <td class="num">${fmtInt(p.qtd)}</td>
+      <td class="num">${fmtMoney(p.valor)}</td>
+    </tr>`).join('') || `<tr class="empty-row"><td colspan="3">Nenhum pedido encontrado.</td></tr>`;
+
   return `
     <div class="dep-hero" style="background:linear-gradient(135deg,#28407A,#101B36);">
       <div>
@@ -718,29 +733,34 @@ function renderComercialTab(){
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h3>Visão</h3></div>
-      <div class="card-sub">Métrica usada na curva ABC e no gráfico Top 15.</div>
-      <div class="field" style="max-width:220px;">
-        <label for="comercial-metrica">Métrica</label>
-        <select id="comercial-metrica">
-          <option value="valor" ${metrica==='valor'?'selected':''}>Valor (R$)</option>
-          <option value="qtd" ${metrica==='qtd'?'selected':''}>Quantidade (cx)</option>
-        </select>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Top itens por valor</h3></div>
+        <div class="card-sub">Maior valor agregado de venda, do maior pro menor.</div>
+        <div class="table-scroll" style="max-height:480px;"><table>
+          <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Valor</th></tr></thead>
+          <tbody>${aggregateSaidaPorSku().sort((a,b)=>b.valor-a.valor).slice(0,15).map(s=>`
+            <tr><td class="mono">${s.sku}</td><td class="desc-cell"><b>${esc(s.descricao)}</b></td><td class="num">${fmtMoney(s.valor)}</td></tr>
+          `).join('') || `<tr class="empty-row"><td colspan="3">Sem dados.</td></tr>`}</tbody>
+        </table></div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h3>Top 15 — mais vendidos</h3></div>
-      <div class="card-sub">Cor por classe: verde = A, roxo = B, vermelho = C.</div>
-      ${barChartH(top15, {padL:230, fmt})}
+      <div class="card">
+        <div class="card-head"><h3>Top itens por número de pedidos</h3></div>
+        <div class="card-sub">Itens que mais aparecem em pedidos distintos, do maior pro menor.</div>
+        <div class="table-scroll" style="max-height:480px;"><table>
+          <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Pedidos</th></tr></thead>
+          <tbody>${aggregateSaidaPorSku().sort((a,b)=>b.numPedidos-a.numPedidos).slice(0,15).map(s=>`
+            <tr><td class="mono">${s.sku}</td><td class="desc-cell"><b>${esc(s.descricao)}</b></td><td class="num">${fmtInt(s.numPedidos)}</td></tr>
+          `).join('') || `<tr class="empty-row"><td colspan="3">Sem dados.</td></tr>`}</tbody>
+        </table></div>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-head"><h3>Curva ABC completa</h3></div>
       <div class="card-sub">${fmtInt(porSku.length)} SKU(s). Classe A = até 80% acumulado, B = até 95%, C = o restante (cauda longa).</div>
       <div class="table-scroll" style="max-height:480px;"><table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">${metrica==='valor'?'Valor':'Qtd'}</th><th style="text-align:right">%</th><th style="text-align:right">% Acum.</th><th>Classe</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Valor</th><th style="text-align:right">%</th><th style="text-align:right">% Acum.</th><th>Classe</th></tr></thead>
         <tbody>${abcRows}</tbody>
       </table></div>
     </div>
@@ -764,17 +784,26 @@ function renderComercialTab(){
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h3>Ranking por bairro</h3></div>
-      <div class="card-sub">${fmtInt(porBairro.length)} bairro(s) atendidos.</div>
-      <div class="table-scroll" style="max-height:420px;"><table>
-        <thead><tr><th>Bairro</th><th style="text-align:right">Clientes</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
-        <tbody>${bairroRows}</tbody>
-      </table></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head"><h3>Ranking por bairro</h3></div>
+        <div class="card-sub">${fmtInt(porBairro.length)} bairro(s) atendidos.</div>
+        <div class="table-scroll" style="max-height:480px;"><table>
+          <thead><tr><th>Bairro</th><th style="text-align:right">Clientes</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor</th></tr></thead>
+          <tbody>${bairroRows}</tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>Ranking por pedido</h3></div>
+        <div class="card-sub">${fmtInt(porPedido.length)} pedido(s), ordenado pelo maior valor.</div>
+        <div class="table-scroll" style="max-height:480px;"><table>
+          <thead><tr><th>Pedido</th><th style="text-align:right">Qtd (cx)</th><th style="text-align:right">Valor</th></tr></thead>
+          <tbody>${pedidoRows}</tbody>
+        </table></div>
+      </div>
     </div>
   `;
 }
-
 function computeGlobalKPIs(){
   const estoque = state.data.estoque;
   const cargas = filteredCargas();
@@ -869,7 +898,7 @@ function skuTotalsFaturavel(rows){
   });
   return Object.values(map).sort((a,b)=>b.qtd-a.qtd);
 }
-function skuTotalsTable(rows, limit){
+function skuTotalsTable(rows, limit, qtdLabel){
   const all = skuTotalsFaturavel(rows);
   const shown = limit ? all.slice(0,limit) : all;
   let body = shown.map(s=>`
@@ -881,7 +910,7 @@ function skuTotalsTable(rows, limit){
   if(!body) body = `<tr class="empty-row"><td colspan="3">Nenhum SKU encontrado para os filtros atuais.</td></tr>`;
   const foot = `<div class="card-sub" style="margin-top:10px;margin-bottom:0;">${fmtInt(shown.length)} de ${fmtInt(all.length)} SKUs exibidos</div>`;
   return `<div class="table-scroll" style="max-height:420px;"><table>
-    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">Cx (CD13+Picking)</th></tr></thead>
+    <thead><tr><th>SKU</th><th>Descrição</th><th style="text-align:right">${qtdLabel||'Cx (CD13+Picking)'}</th></tr></thead>
     <tbody>${body}</tbody></table></div>${foot}`;
 }
 
@@ -1190,9 +1219,6 @@ function renderDepPanel(key){
   const def = DEP_GROUPS[key];
   const rows = itemsForDep(key);
   const kp = computeDepKPIs(key);
-  const cats = categoryBreakdown(rows).slice(0,7);
-  const chartColors = {cd13:'var(--cd13)', quarentena:'var(--quarentena)', reembalar:'var(--reembalar)', descarte:'var(--descarte)'};
-  const barData = cats.map(([label,value])=>({label: label.length>22?label.slice(0,20)+'…':label, value, color:chartColors[key]}));
 
   const miniKpis = [
     `<div class="mini-kpi"><div class="l">Posições ocupadas</div><div class="v">${fmtInt(kp.posicoes)}</div></div>`,
@@ -1248,11 +1274,11 @@ function renderDepPanel(key){
           <div class="card-head"><h3>Total por SKU — saldo faturável <span style="font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle;">${fmtInt(skuList.length)} SKU${skuList.length===1?'':'s'}</span></h3></div>
           <div class="card-sub">Soma de caixas por SKU em CD13 + Picking juntos (sem distinguir de qual dos dois veio). O contador acima mostra quantos SKUs distintos estão cadastrados nessas áreas hoje — sobe conforme novos itens forem lançados. Clique num endereço no mapa, ou busque um SKU/descrição, para ver só o total daquele item.</div>
           ${skuTotalsTable(rows, null)}
-        `; })() : `
-          <div class="card-head"><h3>Caixas por categoria</h3></div>
-          <div class="card-sub">Distribuição do volume armazenado nesta área.</div>
-          ${barData.length ? barChartH(barData,{width:400}) : '<div class="card-sub">Sem itens nesta área.</div>'}
-        `}
+        `; })() : (()=>{ const skuList = skuTotalsFaturavel(rows); return `
+          <div class="card-head"><h3>Ranking de itens <span style="font-size:11px;font-weight:700;background:var(--surface-soft);color:var(--ink-soft);padding:2px 9px;border-radius:999px;margin-left:6px;vertical-align:middle;">${fmtInt(skuList.length)} SKU${skuList.length===1?'':'s'}</span></h3></div>
+          <div class="card-sub">Itens em ${def.label}, do maior pro menor volume.</div>
+          ${skuList.length ? skuTotalsTable(rows, null, 'Cx') : '<div class="card-sub">Sem itens nesta área.</div>'}
+        `; })()}
       </div>
     </div>
   `;
@@ -1664,12 +1690,8 @@ function renderCargas(){
 
 /* ============ MASTER RENDER ============ */
 function populateCategoriaFilter(){
-  const sel = document.getElementById('f-categoria');
-  const current = sel.value;
-  const cats = new Set(state.data.estoque.map(r=>normCat(r.categoria)));
-  state.data.cargas.forEach(c=>c.items.forEach(it=>cats.add(normCat(it.categoria))));
-  sel.innerHTML = '<option value="">Todas as categorias</option>' + [...cats].sort().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  sel.value = current;
+  // categoria removida do produto — função mantida vazia só pra não quebrar
+  // as chamadas existentes em outros pontos do código.
 }
 
 function renderAll(){
@@ -1691,8 +1713,6 @@ function renderAll(){
 }
 
 function wireDynamicEvents(){
-  const comercialMetrica = document.getElementById('comercial-metrica');
-  if(comercialMetrica) comercialMetrica.addEventListener('change', e=>{ state.comercialMetrica = e.target.value; renderAll(); });
   document.querySelectorAll('.cell.active').forEach(c=>{
     c.addEventListener('click', ()=>{
       const addr = c.dataset.addr;
@@ -1723,13 +1743,11 @@ function wireDynamicEvents(){
 
 /* ============ FILTER BAR EVENTS ============ */
 document.getElementById('f-search').addEventListener('input', e=>{ state.search = e.target.value.trim(); renderAll(); });
-document.getElementById('f-categoria').addEventListener('change', e=>{ state.categoria = e.target.value; renderAll(); });
 document.getElementById('f-from').addEventListener('change', e=>{ state.from = e.target.value || null; renderAll(); });
 document.getElementById('f-to').addEventListener('change', e=>{ state.to = e.target.value || null; renderAll(); });
 document.getElementById('btn-clear').addEventListener('click', ()=>{
-  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null;
+  state.search=''; state.from=null; state.to=null; state.addressFilter=null;
   document.getElementById('f-search').value='';
-  document.getElementById('f-categoria').value='';
   document.getElementById('f-from').value='';
   document.getElementById('f-to').value='';
   renderAll();
@@ -2184,15 +2202,147 @@ function legacyTextToFields(raw){
   return res;
 }
 
+/* dd/mm/aaaa pra exportação — o resto do painel usa aaaa-mm-dd internamente */
+function fmtDateBR(iso){
+  if(!iso) return '';
+  const [y,m,d] = String(iso).split('-');
+  if(!y||!m||!d) return iso;
+  return `${d}/${m}/${y}`;
+}
+/* ============ EXPORTAÇÃO ANALÍTICA (giro, ruptura, itens parados) ============ */
+/* giro diário por SKU = total vendido no período (todas as saídas
+   lançadas) dividido pelos dias entre a primeira e a última saída. */
+function computeGiroPorSku(){
+  const vendidoPorSku = {};
+  allSaidaItems().forEach(it=>{ vendidoPorSku[it.sku] = (vendidoPorSku[it.sku]||0) + (it.qtd||0); });
+  // período de referência: usa o filtro "de/até" quando o usuário indicou;
+  // o que não foi indicado cai no padrão — "de" vira o início real dos
+  // dados (a saída mais antiga lançada), "até" vira a data de hoje (data
+  // da exportação).
+  const todasDatas = (state.data.saidas||[]).map(s=>s.data).filter(Boolean).sort();
+  const inicioPadrao = todasDatas[0] || new Date().toISOString().slice(0,10);
+  const hoje = new Date().toISOString().slice(0,10);
+  const periodoInicio = state.from || inicioPadrao;
+  const periodoFim = state.to || hoje;
+  const d1 = new Date(periodoInicio+'T00:00:00'), d2 = new Date(periodoFim+'T00:00:00');
+  const periodoDias = Math.max(1, Math.round((d2-d1)/86400000)+1);
+  return { vendidoPorSku, periodoDias, periodoInicio, periodoFim };
+}
+/* estoque atual faturável (CD13+Picking) por SKU — mesma base usada no
+   resto do painel pra saldo real. */
+function estoqueFaturavelPorSku(){
+  const map = {};
+  itemsForDep('cd13').forEach(r=>{ map[r.sku] = (map[r.sku]||0) + (r.qtdCx||0); });
+  return map;
+}
+function buildAnaliseGiro(){
+  const { vendidoPorSku, periodoDias, periodoInicio, periodoFim } = computeGiroPorSku();
+  const estoqueMap = estoqueFaturavelPorSku();
+  const descMap = {};
+  state.data.estoque.forEach(r=>{ if(!descMap[r.sku]) descMap[r.sku] = r.descricao; });
+  (state.data.saidas||[]).forEach(s=>(s.items||[]).forEach(it=>{ if(!descMap[it.sku]) descMap[it.sku] = it.descricao; }));
+  const skus = new Set([...Object.keys(estoqueMap).map(Number), ...Object.keys(vendidoPorSku).map(Number)]);
+  const linhas = [...skus].map(sku=>{
+    const estoqueAtual = estoqueMap[sku]||0;
+    const vendido = vendidoPorSku[sku]||0;
+    const giroDiario = vendido/periodoDias;
+    const diasCobertura = giroDiario>0 ? estoqueAtual/giroDiario : null;
+    return { sku, descricao: descMap[sku]||'', estoqueAtual, vendido, giroDiario, diasCobertura };
+  });
+  return { linhas, periodoDias, periodoInicio, periodoFim };
+}
+function statusCobertura(giroDiario, dias){
+  if(!giroDiario) return '⚪ SEM VENDA NO PERÍODO';
+  if(dias<=7) return '🔴 CRÍTICO';
+  if(dias<=15) return '🟡 ATENÇÃO';
+  if(dias<=60) return '🟢 OK';
+  return '🟠 GIRO BAIXO';
+}
+/* status usado só na aba "Giro" — só 3 categorias, sem repetir o
+   crítico/atenção que já aparece em "Risco de ruptura". */
+function statusGiroSimples(giroDiario, dias){
+  if(!giroDiario) return '⚪ SEM GIRO';
+  if(dias<=60) return '🟢 ALTO GIRO';
+  return '🟠 BAIXO GIRO';
+}
+document.getElementById('btn-export-analise').addEventListener('click', ()=>{
+  const wb = XLSX.utils.book_new();
+
+  // --- Itens a vencer (tudo que tem validade, do mais perto de vencer pro mais longe) ---
+  const comValidade = state.data.estoque.filter(r=>r.validade).slice()
+    .sort((a,b)=> a.validade < b.validade ? -1 : a.validade > b.validade ? 1 : 0);
+  const vencerRows = [
+    ['SKU','DESCRICAO','LOTE','ENDERECO','DEPOSITO','QTD.CX','VALIDADE','DIAS RESTANTES','STATUS'],
+    ...comValidade.map(r=>{
+      const vs = validadeStatus(r.validade);
+      return [r.sku, r.descricao, r.lote, r.endereco, r.deposito, r.qtdCx, fmtDateBR(r.validade), vs.d, vs.tag==='Vencido'?'🔴 VENCIDO':vs.tag==='Crítico'?'🔴 CRÍTICO':vs.tag==='Atenção'?'🟡 ATENÇÃO':'🟢 OK'];
+    })
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vencerRows), 'Itens a vencer');
+
+  // --- Giro alto / estoque baixo (risco de ruptura) — visão focada, só o que precisa de ação já ---
+  const { linhas, periodoDias, periodoInicio, periodoFim } = buildAnaliseGiro();
+  const periodoLabel = `Período de referência (vendas): ${fmtDateBR(periodoInicio)} até ${fmtDateBR(periodoFim)} (${periodoDias} dia(s))`;
+  const risco = linhas.filter(l=>l.giroDiario>0).sort((a,b)=>a.diasCobertura-b.diasCobertura);
+  const riscoRows = [
+    [periodoLabel],
+    ['SKU','DESCRICAO','ESTOQUE ATUAL (CX)','VENDIDO NO PERIODO (CX)','GIRO DIARIO (CX/DIA)','DIAS DE COBERTURA','STATUS'],
+    ...risco.map(l=>[l.sku, l.descricao, l.estoqueAtual, l.vendido, Number(l.giroDiario.toFixed(2)), Number(l.diasCobertura.toFixed(1)), statusCobertura(l.giroDiario, l.diasCobertura)])
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(riscoRows), 'Risco de ruptura');
+
+  // --- Giro (visão completa): todo mundo que tem estoque e/ou venda no
+  // período, do mais urgente (menor cobertura) pro mais parado/sem giro no fim.
+  const todos = linhas.filter(l=>l.estoqueAtual>0 || l.vendido>0).slice()
+    .sort((a,b)=>{
+      const ca = a.diasCobertura==null ? Infinity : a.diasCobertura;
+      const cb = b.diasCobertura==null ? Infinity : b.diasCobertura;
+      return ca-cb;
+    });
+  const giroRows = [
+    [periodoLabel],
+    ['SKU','DESCRICAO','ESTOQUE ATUAL (CX)','VENDIDO NO PERIODO (CX)','GIRO DIARIO (CX/DIA)','DIAS DE COBERTURA','STATUS'],
+    ...todos.map(l=>[l.sku, l.descricao, l.estoqueAtual, l.vendido, Number(l.giroDiario.toFixed(2)), l.diasCobertura!=null?Number(l.diasCobertura.toFixed(1)):'', statusGiroSimples(l.giroDiario, l.diasCobertura)])
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(giroRows), 'Giro');
+
+  // --- Resumo ---
+  const semGiro = todos.filter(l=>!l.giroDiario);
+  const giroBaixo = todos.filter(l=>l.giroDiario>0 && l.diasCobertura>60);
+  const resumoRows = [
+    ['Resumo da análise'],
+    [],
+    ['Itens a vencer (validade cadastrada)', comValidade.length],
+    ['  — vencidos', comValidade.filter(r=>validadeStatus(r.validade).tag==='Vencido').length],
+    ['  — críticos (≤60 dias)', comValidade.filter(r=>validadeStatus(r.validade).tag==='Crítico').length],
+    ['  — atenção (≤180 dias)', comValidade.filter(r=>validadeStatus(r.validade).tag==='Atenção').length],
+    [],
+    ['SKUs em risco de ruptura (giro>0)', risco.length],
+    ['  — críticos (≤7 dias de cobertura)', risco.filter(l=>l.diasCobertura<=7).length],
+    ['  — atenção (≤15 dias de cobertura)', risco.filter(l=>l.diasCobertura>7 && l.diasCobertura<=15).length],
+    [],
+    ['Total de SKUs na visão de Giro', todos.length],
+    ['  — giro baixo (>60 dias de cobertura)', giroBaixo.length],
+    ['  — sem nenhuma venda no período', semGiro.length],
+  ];
+  const wsResumo = XLSX.utils.aoa_to_sheet(resumoRows);
+  XLSX.utils.book_append_sheet(wb, wsResumo, 'Resumo');
+  // reordena o Resumo pra ser a primeira aba
+  wb.SheetNames.unshift(wb.SheetNames.pop());
+
+  XLSX.writeFile(wb, 'Estoque_BH_analise.xlsx');
+  toast('Planilha de análise exportada com sucesso.');
+});
+
 document.getElementById('btn-export').addEventListener('click', ()=>{
   const wb = XLSX.utils.book_new();
-  const estHeader = ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUME','MARCA','LOTES','VALIDADE','QTD.CX','LOCALIDADE','DEPOSITO'];
+  const estHeader = ['COD_SKU','DESCRICAO_SKU','VOLUME','LOTES','VALIDADE','QTD.CX','LOCALIDADE','DEPOSITO'];
   const pr = state.data.paletesResumo;
   const paletesData   = [pr.emUso,pr.vaziosBons,pr.vaziosDanificados,pr.total];
   const estRows = [
     estHeader.concat(['', 'PALETES']),
     ...state.data.estoque.map((r,i)=>{
-      const row = [r.sku,r.descricao,r.categoria,r.volume,r.marca,r.lote,r.validade,r.qtdCx,r.endereco,r.deposito];
+      const row = [r.sku,r.descricao,r.volume,r.lote,fmtDateBR(r.validade),r.qtdCx,r.endereco,r.deposito];
       if(i===0) row.push('', 'Em Uso', 'Vazios', '', 'Total');
       else if(i===1) row.push('', '', 'Bons', 'Danificados');
       else if(i===2) row.push('', paletesData[0], paletesData[1], paletesData[2], paletesData[3]);
@@ -2205,12 +2355,12 @@ document.getElementById('btn-export').addEventListener('click', ()=>{
     const rows = [
       ['FOLHA DE CONFERÊNCIA DE ENTRADA'],
       [`NF: ${c.nf}`, c.titulo, `TOTAL ${c.totalPaletesInformado} PALETES`, `MOTORISTA: ${c.motorista}`, '', '', `VEÍCULO: ${c.veiculo}`, '', `PALETES VAZIOS: ${c.paletesVazios}`],
-      ['COD_SKU','DESCRICAO_SKU','CATEGORIA','VOLUM.','MARCA','QTD.CX','LOTE','QTD CONFERIDA','ENDEREÇO','DIVERGENCIA','AVARIA','REEMBALAR','OBS'],
-      ...c.items.map(it=>[it.sku,it.descricao,it.categoria,it.volume,it.marca,it.qtdCx,it.lote,it.qtdConferida,it.endereco,it.divergencia,it.avariaDescarte||'',it.reembalar||'',it.obs]),
+      ['COD_SKU','DESCRICAO_SKU','VOLUM.','QTD.CX','LOTE','QTD CONFERIDA','ENDEREÇO','DIVERGENCIA','AVARIA','REEMBALAR','OBS'],
+      ...c.items.map(it=>[it.sku,it.descricao,it.volume,it.qtdCx,it.lote,it.qtdConferida,it.endereco,it.divergencia,it.avariaDescarte||'',it.reembalar||'',it.obs]),
     ];
     const totalCx = c.items.reduce((s,it)=>s+(it.qtdCx||0),0);
     const totalConf = c.items.reduce((s,it)=>s+(it.qtdConferida||0),0);
-    rows.push([null,null,null,null,null,totalCx,null,totalConf,null,totalConf-totalCx]);
+    rows.push([null,null,null,totalCx,null,totalConf,null,totalConf-totalCx]);
     const sheetName = `Carga ${c.id}`.slice(0,31);
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), sheetName);
   });
@@ -2218,7 +2368,7 @@ document.getElementById('btn-export').addEventListener('click', ()=>{
   if((state.data.sap||[]).length){
     const sapRows = [
       ['Produto','Descrição breve do produto','Lote','Qtd.disponível','Data do vencimento'],
-      ...state.data.sap.map(r=>[r.sku, r.descricao, r.lote, r.qtd, r.validade])
+      ...state.data.sap.map(r=>[r.sku, r.descricao, r.lote, r.qtd, fmtDateBR(r.validade)])
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sapRows), 'SAP');
   }
@@ -2229,12 +2379,10 @@ document.getElementById('btn-export').addEventListener('click', ()=>{
 
 document.getElementById('btn-reset').addEventListener('click', ()=>{
   state.data = JSON.parse(JSON.stringify(ORIGINAL));
-  state.search=''; state.categoria=''; state.from=null; state.to=null; state.addressFilter=null; state.openCarga=null;
+  state.search=''; state.from=null; state.to=null; state.addressFilter=null; state.openCarga=null;
   document.getElementById('f-search').value='';
-  document.getElementById('f-categoria').value='';
   document.getElementById('f-from').value='';
   document.getElementById('f-to').value='';
-  populateCategoriaFilter();
   renderAll();
   toast('Dados originais da planilha restaurados.');
 });
