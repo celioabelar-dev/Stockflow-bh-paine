@@ -591,10 +591,22 @@ function computeSapConfronto(){
 function filteredSaidas(){
   return (state.data.saidas||[]).filter(s => inPeriod(s.data));
 }
+/* transferência entre galpões não é venda de verdade — Cliente="MATRIZ" ou
+   Razão Social contendo "TRANSF" fica de fora de qualquer cálculo comercial
+   (Dashboard Comercial, curva ABC, rankings, giro, risco de ruptura). */
+function isTransferenciaEntreGalpoes(it){
+  const cliente = String(it.cliente||'').trim().toUpperCase();
+  const razao = String(it.razaoSocial||'').trim().toUpperCase();
+  return cliente==='MATRIZ' || razao.includes('TRANSF');
+}
 function allSaidaItems(){
   const items = [];
   filteredSaidas().forEach(s=>{
-    (s.items||[]).forEach(it=>{ items.push({...it, ordemFrete:s.ordemFrete, data:s.data}); });
+    (s.items||[]).forEach(it=>{
+      const full = {...it, ordemFrete:s.ordemFrete, data:s.data};
+      if(isTransferenciaEntreGalpoes(full)) return;
+      items.push(full);
+    });
   });
   return items;
 }
@@ -2116,21 +2128,24 @@ function parseWorkbook(wb){
     });
   });
 
-  // formato novo: aba ENTRADA única, uma linha por item, NF repetido por
-  // arrasto — reconstrói as cargas agrupando pelo NF. Avaria/Reembalar/
-  // Quarentena aqui ficam só no histórico de conferência (pra aparecer nas
-  // abas Cargas/Divergência) — quem manda pro depósito físico é só a aba
-  // Estoque, a Entrada não cria posição de estoque sozinha.
-  const entradaSheetName = wb.SheetNames.find(n=>/^entrada$/i.test(n.trim()));
-  if(entradaSheetName){
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[entradaSheetName], {header:1, raw:true});
+  // conferência da carga: hoje vem da aba CARGA (uma linha por item, NF
+  // repetido por arrasto) — mantém a antiga aba ENTRADA como fallback só
+  // se não houver CARGA, pra compatibilidade com arquivos mais antigos.
+  // Não tenta ler a ENTRADA quando a CARGA existe, porque a ENTRADA virou
+  // uma tabela de endereçamento com colunas completamente diferentes agora.
+  // Avaria/Reembalar/Quarentena aqui ficam só no histórico de conferência
+  // (pra aparecer nas abas Cargas/Divergência) — quem manda pro depósito
+  // físico é só a aba Estoque, a Carga não cria posição de estoque sozinha.
+  const cargaSheetName = wb.SheetNames.find(n=>/^carga$/i.test(n.trim())) || wb.SheetNames.find(n=>/^entrada$/i.test(n.trim()));
+  if(cargaSheetName){
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[cargaSheetName], {header:1, raw:true});
     const cargasFlat = parseEntradaFlatSheet(rows);
     cargasFlat.forEach((cf,idx)=>{
       let titulo;
       if(cf.data){ const [y,m,d]=cf.data.split('-'); titulo = `CARGA ${d} ${MESES[parseInt(m,10)]||''} ${y}`.trim(); }
       else titulo = cf.nf ? `CARGA · NF ${cf.nf}` : `CARGA ${idx+1}`;
       out.cargas.push({
-        id: cf.nf ? `NF-${cf.nf}` : `entrada-${idx+1}`,
+        id: cf.nf ? `NF-${cf.nf}` : `carga-${idx+1}`,
         data: cf.data || new Date().toISOString().slice(0,10),
         nf: cf.nf,
         titulo,
